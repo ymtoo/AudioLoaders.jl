@@ -1,0 +1,4 @@
+filename,label,probability
+alligator_bellow,1,0.90
+badger_growl,2,0.95
+bear_growl,3,0.99
