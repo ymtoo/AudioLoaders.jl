@@ -21,7 +21,10 @@ Get `AudioLoader` that generates mini-batches in time-series of the audio files.
 ```julia
 using AudioLoaders
 
-data = (wavpaths,)
+m = 3
+probs = rand(m, n)
+probs ./= sum(probs; dims=1)
+data = (wavpaths, probs)
 tsconfig = TSConfig(4800, true)
 audio_loader = AudioLoader(data,
                            tsconfig; 
