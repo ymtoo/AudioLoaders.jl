@@ -11,6 +11,7 @@ using WAV
 include("config.jl")
 include("utils.jl")
 include("audioloader.jl")
+include("embeddings.jl")
 
 const sampletype = Float32
 

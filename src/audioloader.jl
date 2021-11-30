@@ -57,11 +57,36 @@ function Base.iterate(d::AudioLoader, i=0)
     return (batch, nexti)
 end
 
-function Base.getindex(d::AudioLoader, i::Int)
-    iterate(d, (i - 1) * d.batchsize+1) |> first
+function Base.getindex(d::AudioLoader, i::Integer)
+    iterate(d, (i - 1) * d.batchsize) |> first
 end
 
 function Base.length(d::AudioLoader)
+    isempty(d) && return 0
     n = d.nobs / d.batchsize
-    d.partial ? ceil(Int,n) : floor(Int,n)
+    d.partial ? ceil(Int, n) : floor(Int, n)
+end
+
+Base.firstindex(d::AudioLoader) = 1
+Base.lastindex(d::AudioLoader) = length(d)
+Base.isempty(d::AudioLoader) = any(isempty.(d.data))
+function Base.getindex(d::AudioLoader, indices::UnitRange)
+    n = d.nobs
+    i = (first(indices) - 1) * d.batchsize + 1 
+    j = min((last(indices) - 1) * d.batchsize + 1 + d.batchsize, d.nobs)
+    #j = (last(indices) - 1) * d.batchsize
+    d.partial && (n > j) && (n - j < d.batchsize) && (j = n)
+    ((i > n) || (j > n)) && (return throw(BoundsError(d, i:j)))
+    newdata = []
+    for d ∈ d.data
+        nd = ndims(d)
+        colons = [Colon() for _ ∈ 1:nd-1]
+        push!(newdata, d[colons...,i:j])
+    end
+    AudioLoader(Tuple(newdata), 
+                d.config; 
+                batchsize = d.batchsize, 
+                shuffle = d.shuffle, 
+                partial = d.partial, 
+                rng = d.rng)
 end

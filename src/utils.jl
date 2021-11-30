@@ -66,3 +66,13 @@ function tospec(x::AbstractVector, config::SpecConfig)
            a -> config.scaled(a)::Matrix{sampletype}
     imresize(spec, config.newdims...)
 end
+
+function unpack_data(::TSConfig, data)
+    ds = first(data)
+    ds
+end
+
+function unpack_data(::SpecConfig, data)
+    ds = first(data)
+    first(ds)..., last(ds)
+end
