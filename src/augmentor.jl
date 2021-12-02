@@ -11,8 +11,8 @@ function apply(::Identity, x::AbstractVector{T}) where {T}
     x
 end
 
-struct Amplify <: TSAugmentor
-    ampdist::UnivariateDistribution
+struct Amplify{T<:UnivariateDistribution{Continuous}} <: TSAugmentor
+    ampdist::T
 end
 Amplify(amin::Real, amax::Real) = Amplify(Uniform(amin, amax))
 
@@ -26,18 +26,20 @@ function apply(::PolarityInverse, x::AbstractVector{T}) where {T}
     -x
 end
 
-struct CircularShift <: TSAugmentor 
-    shiftdist::UnivariateDistribution
+struct CircularShift{T<:UnivariateDistribution{Discrete}} <: TSAugmentor 
+    shiftdist::T
 end
 CircularShift(p::Real) = CircularShift(Geometric(p))
 
 function apply(op::CircularShift, x::AbstractVector{T}) where {T}
-    shift = rand(truncated(op.shiftdist, 1, length(x)-1))
+    shift = rand(op.shiftdist)::Int
+    shift < 1 && (shift = 1)
+    shift ≥ length(x) && (shift = length(x) - 1) 
     circshift(x, shift)
 end
 
-struct TimeStretch{M} <: TSAugmentor
-    sdist::UnivariateDistribution
+struct TimeStretch{T<:UnivariateDistribution{Continuous},M} <: TSAugmentor
+    sdist::T
     tsmodifer::M
 end
 TimeStretch(σ::T) where {T<:Real} = TimeStretch(truncated(Normal(one(T), σ), one(T)-3σ, one(T)+3σ),
@@ -48,8 +50,8 @@ function apply(op::TimeStretch, x::AbstractVector{T}) where {T}
     timestretch(op.tsmodifer, x, s)
 end
 
-struct PitchShift{M} <: TSAugmentor
-    sdist::UnivariateDistribution
+struct PitchShift{T<:UnivariateDistribution{Continuous},M} <: TSAugmentor
+    sdist::T
     tsmodifer::M
 end
 PitchShift(σ::T) where {T<:Real} = PitchShift(truncated(Normal(zero(T), σ), -3σ, 3σ),
