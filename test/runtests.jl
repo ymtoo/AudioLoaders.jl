@@ -1,6 +1,6 @@
 using AudioLoaders
 
-using DelimitedFiles, Test, WAV
+using DelimitedFiles, Distributions, Test, WAV
 
 paths = readdir("data/audio/"; join=true, sort=true)
 metadata = readdlm("data/metadata.csv", ','; skipstart=1)
@@ -123,4 +123,19 @@ end
     @test size(Z1) == (1, length(paths))
     Z2 = embed(f2, specloader)
     @test size(Z2) == (2, length(paths))
+end
+
+@testset "augmentor" begin
+    
+    n = 9600
+    x = randn(n)
+    @test apply(Amplify(Uniform(1.999999,2.000001)), x) ≈ 2 .* x atol=1e-3
+    @test apply(PolarityInverse(), x) == -x
+    @test apply(CircularShift(Binomial(1,1)), x) == circshift(x, 1)
+    @test apply(TimeStretch(0.0000001), x) ≈ x atol=0.1
+    @test apply(PitchShift(0.0000001), x) ≈ x atol=0.1
+
+    @test random_apply(PolarityInverse(), x; p=0) == -x
+    @test random_apply(PolarityInverse(), x; p=1) == x
+
 end
