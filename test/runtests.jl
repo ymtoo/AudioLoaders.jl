@@ -10,14 +10,16 @@ paths = paths[indices]
 labels = convert.(Int, metadata[indices,2])
 probs = convert.(Float32, metadata[indices,3])
 data = (paths, labels, probs)
-wavlens = begin
-    ls = AudioLoaders.sampletype[]
+wavlens, samplingrates = begin
+    tls = AudioLoaders.sampletype[]
+    srs = AudioLoaders.sampletype[]
     for path ∈ paths
         n = first(wavread(path; format="size"))
         fs = (wavread(path; subrange=1:1))[2]
-        push!(ls, n / fs)
+        push!(tls, n / fs)
+        push!(srs, fs)
     end
-    ls
+    tls, srs
 end
 
 @testset "data = (paths, labels, probs)
@@ -66,15 +68,17 @@ AudioLoader" begin
                                 end
                             end
                         elseif config isa SpecConfig
-                            X1s, ls = first(X)
+                            X1s, tls, srs = first(X)
                             if !partial | (i < length(audio_loader))
                                 for X1 ∈ X1s 
                                     @test size(X1) == (config.newdims..., nc, batchsize)
                                 end
                                 stopindex = startindex + batchsize - 1
-                                @test wavlens[startindex:stopindex] ≈ ls
+                                @test wavlens[startindex:stopindex] ≈ tls 
+                                @test samplingrates[startindex:stopindex] ≈ srs
                             else
-                                @test wavlens[startindex:end] ≈ ls
+                                @test wavlens[startindex:end] ≈ tls
+                                @test samplingrates[startindex:end] ≈ srs
                                 for X1 ∈ X1s 
                                     @test size(X1) == (config.newdims..., nc, length(first(audio_loader.data))-startindex+1)
                                 end
@@ -135,7 +139,7 @@ end
     @test apply(TimeStretch(0.0000001), x) ≈ x atol=0.1
     @test apply(PitchShift(0.0000001), x) ≈ x atol=0.1
 
-    @test random_apply(PolarityInverse(), x; p=0) == -x
-    @test random_apply(PolarityInverse(), x; p=1) == x
+    @test random_apply(PolarityInverse(), x; p=0) == x
+    @test random_apply(PolarityInverse(), x; p=1) == -x
 
 end

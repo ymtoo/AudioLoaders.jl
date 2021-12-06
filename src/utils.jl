@@ -25,17 +25,19 @@ function _getaudioobs(data::Tuple,
     batchsize = length(ids)
     Xs = [_batchinitialize(config, batchsize) for _ ∈ 1:config.ndata]
     timesec = zeros(sampletype, batchsize)
+    samplingrates = zeros(sampletype, batchsize)
     Threads.@threads for i ∈ 1:batchsize
         x1, fs = wavread(data[1][ids[i]]; format="native")
         x = x1 |> a -> convert.(sampletype, a)
         timesec[i] = convert(sampletype, size(x, 1) / fs)
+        samplingrates[i] = convert(sampletype, fs)
         for j ∈ 1:config.ndata
             for k ∈ 1:config.nchannels
                 Xs[j][:,:,k,i] = config.augment(x[:,k]) |> a -> tospec(a, config)
             end
         end
     end
-    return ((Xs, timesec), map(y -> convert.(sampletype, _getobs(y, ids)), data[2:end])...)#map(Base.Fix2(_getobs, ids), data[2:end])...)
+    return ((Xs, timesec, samplingrates), map(y -> convert.(sampletype, _getobs(y, ids)), data[2:end])...)#map(Base.Fix2(_getobs, ids), data[2:end])...)
 end
 
 function wavread_process(wavpath::AbstractString, config::TSConfig)
