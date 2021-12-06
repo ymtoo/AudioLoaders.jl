@@ -16,8 +16,11 @@ struct Amplify{T<:UnivariateDistribution{Continuous}} <: TSAugmentor
 end
 Amplify(amin::Real, amax::Real) = Amplify(Uniform(amin, amax))
 
-function apply(op::Amplify, x::AbstractVector{T}) where {T}
+function apply(op::Amplify, x::AbstractVector{T}) where {T<:AbstractFloat}
     T(rand(op.ampdist)) .* x
+end
+function apply(op::Amplify, x::AbstractVector{T}) where {T<:Integer}
+    rand(op.ampdist) .* x
 end
 
 struct PolarityInverse <: TSAugmentor end
@@ -44,7 +47,6 @@ struct TimeStretch{T<:UnivariateDistribution{Continuous},M} <: TSAugmentor
 end
 TimeStretch(σ::T) where {T<:Real} = TimeStretch(truncated(Normal(one(T), σ), one(T)-3σ, one(T)+3σ),
                                                 WSOLA(256, 128, hanning, 10))
-
 function apply(op::TimeStretch, x::AbstractVector{T}) where {T}
     s = rand(op.sdist)
     timestretch(op.tsmodifer, x, s)
@@ -63,7 +65,7 @@ function apply(op::PitchShift, x::AbstractVector{T}) where {T}
 end
 
 function random_apply(op::TSAugmentor, x; p=1.0)
-    if rand() > p
+    if rand() < p
         apply(op, x)
     else
         x
