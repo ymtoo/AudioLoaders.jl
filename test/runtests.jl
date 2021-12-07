@@ -7,8 +7,10 @@ metadata = readdlm("data/metadata.csv", ','; skipstart=1)
 files = metadata[:,1]
 indices = sortperm(files)
 paths = paths[indices]
-labels = convert.(Int, metadata[indices,2])
-probs = convert.(Float32, metadata[indices,3])
+labeltype = Int
+labels = convert.(labeltype, metadata[indices,2])
+probtype = Float32
+probs = convert.(probtype, metadata[indices,3])
 data = (paths, labels, probs)
 wavlens, samplingrates = begin
     tls = AudioLoaders.sampletype[]
@@ -50,12 +52,26 @@ AudioLoader" begin
                                             batchsize=batchsize,
                                             partial=partial,
                                             shuffle=false)
-                    audio_loader1 = audio_loader[2:end]
+                    audio_loader1 = audio_loader[2:end] # warning
                     n = length(paths) / batchsize
                     @test length(audio_loader) == (partial ? ceil(Int, n) : floor(Int, n))
                     for (i, X) ∈ enumerate(audio_loader)
                         i > 1 && !isempty(audio_loader1) && (@test X == audio_loader1[i-1]) # getindex
-                        startindex = (i-1) * batchsize + 1
+                        
+                        # test targets
+                        startindex = (i-1) * audio_loader.batchsize + 1
+                        @test eltype(X[2]) == labeltype
+                        @test eltype(X[3]) == probtype
+                        if !partial | (i < length(audio_loader))
+                            stopindex = startindex + audio_loader.batchsize - 1
+                            @test X[2] == labels[startindex:stopindex]
+                            @test X[3] == probs[startindex:stopindex]
+                        else
+                            @test X[2] == labels[startindex:end]
+                            @test X[3] == probs[startindex:end]
+                        end
+
+                        # test data
                         if config isa TSConfig
                             for X1 ∈ first(X)
                                 if !partial | (i < length(audio_loader))

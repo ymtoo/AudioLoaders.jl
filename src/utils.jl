@@ -16,7 +16,7 @@ function _getaudioobs(data::Tuple,
             Xs[j][:,:,1,i] = wavread_process(data[1][ids[i]], config)
         end
     end
-    return (Xs, map(y -> convert.(sampletype, _getobs(y, ids)), data[2:end])...)#map(Base.Fix2(_getobs, ids), data[2:end])...)
+    return (Xs, map(y -> _getobs(y, ids), data[2:end])...)#map(Base.Fix2(_getobs, ids), data[2:end])...)
 end
 
 function _getaudioobs(data::Tuple, 
@@ -37,7 +37,7 @@ function _getaudioobs(data::Tuple,
             end
         end
     end
-    return ((Xs, timesec, samplingrates), map(y -> convert.(sampletype, _getobs(y, ids)), data[2:end])...)#map(Base.Fix2(_getobs, ids), data[2:end])...)
+    return ((Xs, timesec, samplingrates), map(y -> _getobs(y, ids), data[2:end])...)#map(Base.Fix2(_getobs, ids), data[2:end])...)#
 end
 
 function wavread_process(wavpath::AbstractString, config::TSConfig)
