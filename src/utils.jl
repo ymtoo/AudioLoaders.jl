@@ -11,12 +11,18 @@ function _getaudioobs(data::Tuple,
                       ids::Vector{I}) where {I<:Integer}
     batchsize = length(ids)
     Xs = [_batchinitialize(config, batchsize) for _ ∈ 1:config.ndata]
+    timesec = zeros(sampletype, batchsize)
+    samplingrates = zeros(sampletype, batchsize)
     Threads.@threads for i ∈ 1:batchsize
+        xsize = first(wavread(data[1][ids[i]]; format="size"))
+        _, fs = wavread(data[1][ids[i]]; subrange=1)
+        timesec[i] = convert(sampletype, xsize / fs)
+        samplingrates[i] = convert(sampletype, fs)
         for j ∈ 1:config.ndata
             Xs[j][:,:,1,i] = wavread_process(data[1][ids[i]], config)
         end
     end
-    return (Xs, map(y -> _getobs(y, ids), data[2:end])...)#map(Base.Fix2(_getobs, ids), data[2:end])...)
+    return ((Xs, timesec, samplingrates), map(y -> _getobs(y, ids), data[2:end])...)#map(Base.Fix2(_getobs, ids), data[2:end])...)
 end
 
 function _getaudioobs(data::Tuple, 
@@ -69,12 +75,20 @@ function tospec(x::AbstractVector, config::SpecConfig)
     imresize(spec, config.newdims...)
 end
 
-function unpack_data(::TSConfig, data)
-    ds = first(data)
-    ds
-end
+# function unpack_data(::TSConfig, data)
+#     ds = first(data)
+#     ds
+# end
 
-function unpack_data(::SpecConfig, data)
+function unpack_data(data, withtimesec, withsamplingrate)
     ds = first(data)
-    first(ds)..., last(ds)
+    if withtimesec && withsamplingrate
+        first(first(ds)), ds[2:end]...
+    elseif withtimesec
+        first(first(ds)), ds[2]
+    elseif withsamplingrate
+        first(first(ds)), ds[3]
+    else
+        (first(first(ds)),)
+    end
 end

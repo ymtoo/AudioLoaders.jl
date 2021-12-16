@@ -72,34 +72,39 @@ AudioLoader" begin
                         end
 
                         # test data
+                        X1s, tls, srs = first(X)
                         if config isa TSConfig
-                            for X1 ∈ first(X)
+                            for X1 ∈ X1s
                                 if !partial | (i < length(audio_loader))
                                     @test size(X1) == (config.winsize, 1, nc, batchsize)
+                                    stopindex = startindex + batchsize - 1
                                 else
                                     @test size(X1) == (config.winsize, 
-                                                       1, 
-                                                       nc, 
-                                                       length(first(audio_loader.data))-startindex+1)
+                                                    1, 
+                                                    nc, 
+                                                    length(first(audio_loader.data))-startindex+1)
+                                    stopindex = length(wavlens)
                                 end
                             end
                         elseif config isa SpecConfig
-                            X1s, tls, srs = first(X)
                             if !partial | (i < length(audio_loader))
                                 for X1 ∈ X1s 
                                     @test size(X1) == (config.newdims..., nc, batchsize)
                                 end
                                 stopindex = startindex + batchsize - 1
-                                @test wavlens[startindex:stopindex] ≈ tls 
-                                @test samplingrates[startindex:stopindex] ≈ srs
+                                # @test wavlens[startindex:stopindex] ≈ tls
+                                # @test samplingrates[startindex:stopindex] ≈ srs
                             else
-                                @test wavlens[startindex:end] ≈ tls
-                                @test samplingrates[startindex:end] ≈ srs
+                                stopindex = length(wavlens)
+                                # @test wavlens[startindex:end] ≈ tls
+                                # @test samplingrates[startindex:end] ≈ srs
                                 for X1 ∈ X1s 
                                     @test size(X1) == (config.newdims..., nc, length(first(audio_loader.data))-startindex+1)
                                 end
                             end
                         end
+                        @test wavlens[startindex:stopindex] ≈ tls
+                        @test samplingrates[startindex:stopindex] ≈ srs
                     end
                 end
             end
@@ -123,26 +128,40 @@ end
                             nchannels = 1,
                             ndata = 1)
     tsloader = AudioLoader(data,
-                           tsconfig; 
-                           batchsize=1,
-                           shuffle=false,
-                           partial=true)
+                        tsconfig; 
+                        batchsize=1,
+                        shuffle=false,
+                        partial=true)
     specloader = AudioLoader(data,
-                             specconfig; 
-                             batchsize=1,
-                             shuffle=false,
-                             partial=true)
-    function f1(x::AbstractArray{T}) where {T} 
+                            specconfig; 
+                            batchsize=1,
+                            shuffle=false,
+                            partial=true)
+    
+    function f(x::AbstractArray{T}) where {T} 
         dropdims(sum(x; dims=[1,2]); dims=(1,2))
     end
-    function f2(x::AbstractArray{T}, y) where {T} 
+    function f(x::AbstractArray{T}, y) where {T} 
         z1 = dropdims(sum(x; dims=[1,2]); dims=(1,2))
         cat(z1, y[1:1,:]; dims=1)
     end
-    Z1 = embed(f1, tsloader)
-    @test size(Z1) == (1, length(paths))
-    Z2 = embed(f2, specloader)
-    @test size(Z2) == (2, length(paths))
+    function f(x::AbstractArray{T}, y, z) where {T} 
+        z1 = dropdims(sum(x; dims=[1,2]); dims=(1,2))
+        cat(z1, y[1:1,:], z[1:1,:]; dims=1)
+    end
+    for withtimesec ∈ [true,false], withsamplingrate ∈ [true,false]
+        nd1 = if withtimesec && withsamplingrate
+            3
+        elseif withtimesec || withsamplingrate
+            2
+        else
+            1
+        end
+        Z1 = embed(f, tsloader; withtimesec=withtimesec, withsamplingrate=withsamplingrate)
+        @test size(Z1) == (nd1, length(paths))
+        Z2 = embed(f, specloader; withtimesec=withtimesec, withsamplingrate=withsamplingrate)
+        @test size(Z2) == (nd1, length(paths))
+    end
 end
 
 @testset "augmentor" begin
