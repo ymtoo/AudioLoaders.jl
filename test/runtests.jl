@@ -24,8 +24,7 @@ wavlens, samplingrates = begin
     tls, srs
 end
 
-@testset "data = (paths, labels, probs)
-AudioLoader" begin
+@testset "AudioLoader" begin
     ncs = [1]
     for nc ∈ ncs
         tsconfig = TSConfig(winsize = 4800, 
@@ -109,6 +108,37 @@ AudioLoader" begin
                 end
             end
         end
+    end
+end
+
+@testset "utils" begin
+    tsconfig = TSConfig(winsize = 4800, 
+                            randsegment = false, 
+                            augment = identity,
+                            nchannels = 1,
+                            ndata = 1)
+    specconfig = SpecConfig(winsize = 512,
+                            noverlap = 256,
+                            window = Windows.hanning(512),
+                            scaled = x -> pow2db.(abs2.(x)),
+                            augment = identity,
+                            newdims = (100,100),
+                            nchannels = 1,
+                            ndata = 1)
+    tsloader = AudioLoader(data,
+                           tsconfig; 
+                           batchsize=2,
+                           partial=true,
+                           shuffle=false)
+    specloader = AudioLoader(data,
+                             specconfig; 
+                             batchsize=2,
+                             partial=true,
+                             shuffle=false)
+    tstargets = gettargets(tsloader)
+    spectargets = gettargets(specloader)
+    for (tstarget, spectarget, target) ∈ zip(tstargets, spectargets, [labels, probs])
+        @test tstarget == spectarget == target
     end
 end
 

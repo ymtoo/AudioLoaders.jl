@@ -11,8 +11,8 @@ using Random: AbstractRNG, shuffle!, GLOBAL_RNG
 using WAV
 
 include("config.jl")
-include("utils.jl")
 include("audioloader.jl")
+include("utils.jl")
 include("embeddings.jl")
 include("augmentor.jl")
 

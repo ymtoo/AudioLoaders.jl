@@ -1,3 +1,5 @@
+export gettargets
+
 function _batchinitialize(config::TSConfig, batchsize::Int)
     zeros(sampletype, config.winsize, 1, config.nchannels, batchsize)
 end
@@ -34,13 +36,11 @@ function _getaudioobs(data::Tuple,
     samplingrates = zeros(sampletype, batchsize)
     Threads.@threads for i ∈ 1:batchsize
         x1, fs = wavread(data[1][ids[i]]; format="native")
-        x = x1 |> a -> convert.(sampletype, a)
+        x = convert.(sampletype, x1) #|> a -> convert.(sampletype, a)
         timesec[i] = convert(sampletype, size(x, 1) / fs)
         samplingrates[i] = convert(sampletype, fs)
-        for j ∈ 1:config.ndata
-            for k ∈ 1:config.nchannels
-                Xs[j][:,:,k,i] = config.augment(x[:,k]) |> a -> tospec(a, config)
-            end
+        for j ∈ 1:config.ndata, k ∈ 1:config.nchannels
+            Xs[j][:,:,k,i] = config.augment(x[:,k]) |> a -> tospec(a, config)
         end
     end
     return ((Xs, timesec, samplingrates), map(y -> _getobs(y, ids), data[2:end])...)#map(Base.Fix2(_getobs, ids), data[2:end])...)#
@@ -75,11 +75,6 @@ function tospec(x::AbstractVector, config::SpecConfig)
     imresize(spec, config.newdims...)
 end
 
-# function unpack_data(::TSConfig, data)
-#     ds = first(data)
-#     ds
-# end
-
 function unpack_data(data, withtimesec, withsamplingrate)
     ds = first(data)
     if withtimesec && withsamplingrate
@@ -91,4 +86,19 @@ function unpack_data(data, withtimesec, withsamplingrate)
     else
         (first(first(ds)),)
     end
+end
+
+"""
+Returns targets of an AudioLoader.
+"""
+function gettargets(d::AudioLoader)
+    (_, ys...) = d[1]
+    ts = eltype.(ys)
+    targets = Vector{Real}[t[] for t ∈ ts]
+    for (_, ys...) ∈ d
+        for (y, target) ∈ zip(ys, targets)
+            append!(target, y)
+        end
+    end
+    targets
 end
