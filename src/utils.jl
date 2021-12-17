@@ -142,17 +142,8 @@ Returns targets of an AudioLoader.
 - a vector of vectors containing all the targets in `d`
 """
 function gettargets(d::AudioLoader)
-    if d.shuffle
-        (_, ys...) = d[1]
-        ts = eltype.(ys)
-        targets = [t[] for t ∈ ts]
-        for (_, ys...) ∈ d
-            for (y, target) ∈ zip(ys, targets)
-                append!(target, y)
-            end
-        end
-        Tuple(targets)
-    else
-        d.data[2:end]
-    end
+    targets = d.data[2:end]
+    n = length(targets)
+    d.shuffle && (targets = Tuple([target[d.indices] for target ∈ targets]))
+    n == 1 ? only(targets) : targets
 end
