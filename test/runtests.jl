@@ -125,20 +125,25 @@ end
                             newdims = (100,100),
                             nchannels = 1,
                             ndata = 1)
-    tsloader = AudioLoader(data,
-                           tsconfig; 
-                           batchsize=2,
-                           partial=true,
-                           shuffle=false)
-    specloader = AudioLoader(data,
-                             specconfig; 
-                             batchsize=2,
-                             partial=true,
-                             shuffle=false)
-    tstargets = gettargets(tsloader)
-    spectargets = gettargets(specloader)
-    for (tstarget, spectarget, target) ∈ zip(tstargets, spectargets, [labels, probs])
-        @test tstarget == spectarget == target
+    batchsize = 2
+    shuffles = [true,false]
+    for shuffle ∈ shuffles
+        tsloader = AudioLoader(data,
+                            tsconfig; 
+                            batchsize=batchsize,
+                            partial=true,
+                            shuffle=shuffle)
+        specloader = AudioLoader(data,
+                                specconfig; 
+                                batchsize=batchsize,
+                                partial=true,
+                                shuffle=shuffle)
+        tstargets = gettargets(tsloader)
+        spectargets = gettargets(specloader)
+        for (tstarget, spectarget, target) ∈ zip(tstargets, spectargets, (labels, probs))
+            @test tstarget == target[tsloader.indices]
+            @test spectarget == target[specloader.indices]
+        end
     end
 end
 

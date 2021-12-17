@@ -1,13 +1,35 @@
 export gettargets
 
+"""
+Initialize a batch 4-D array of all zeros with size of (`winsize`, 1, `config.nchannels`, `batchsize`).
+
+# Arguments
+config: Config instance
+batchsize: batch size
+
+# Returns
+- a 4-D array of all zeros
+"""
 function _batchinitialize(config::TSConfig, batchsize::Int)
     zeros(sampletype, config.winsize, 1, config.nchannels, batchsize)
 end
-
 function _batchinitialize(config::SpecConfig, batchsize::Int)
     zeros(sampletype, config.newdims..., config.nchannels, batchsize)
 end
 
+"""
+Get minibatches of audio files with indices `ids` in the form specified by `config` and the 
+corresponding targets.
+
+# Arguments
+- data : Tuple contains WAV paths and the corresponding targets
+- config: Config instance
+- ids: indices of audio files
+
+# Returns
+- minibatches in a tuple of audio data, time lengths, sampling rates 
+- vectors containing the corresponding targets.   
+"""
 function _getaudioobs(data::Tuple, 
                       config::TSConfig,
                       ids::Vector{I}) where {I<:Integer}
@@ -26,7 +48,6 @@ function _getaudioobs(data::Tuple,
     end
     return ((Xs, timesec, samplingrates), map(y -> _getobs(y, ids), data[2:end])...)#map(Base.Fix2(_getobs, ids), data[2:end])...)
 end
-
 function _getaudioobs(data::Tuple, 
                       config::SpecConfig,
                       ids::Vector{I}) where {I<:Integer}
@@ -69,16 +90,39 @@ function wavread_process(wavpath::AbstractString, config::TSConfig)
     end
 end
 
+"""
+Transform a vector of time-series data to a scaled spectrogram specified by `config`.
+
+# Arguments
+- x : time-series audio data
+- config: SpecConfig instance
+
+# Returns
+- a scaled spectrogram specified by `config`
+"""
 function tospec(x::AbstractVector, config::SpecConfig)
     spec = stft(x, config.winsize, config.noverlap; window=config.window) |>
            a -> config.scaled(a)::Matrix{sampletype}
     imresize(spec, config.newdims...)
 end
 
-function unpack_data(data, withtimesec, withsamplingrate)
+"""
+Unpack audio data into a tuple of audio data, time lengths, sampling rates 
+by selecting the first augmented view.
+
+# Arguments
+- data : acoustic data with multiple augmented views
+- withtimesec : if `true`, includes time lengths (in seconds) of audio files in seconds 
+- withsamplingrate : if `true`, includes sampling rates of audio files in samples
+
+# Returns
+- audio data in the form of first augmented view of the acoustic data and the corresponding time 
+lengths and sampling rates   
+"""
+function unpack_data(data, withtimesec::Bool, withsamplingrate::Bool)
     ds = first(data)
     if withtimesec && withsamplingrate
-        first(first(ds)), ds[2:end]...
+        first(first(ds)), ds[2], ds[3]
     elseif withtimesec
         first(first(ds)), ds[2]
     elseif withsamplingrate
@@ -90,15 +134,25 @@ end
 
 """
 Returns targets of an AudioLoader.
+
+# Arguments
+- d : AudioLoader instance
+
+# Returns
+- a vector of vectors containing all the targets in `d`
 """
 function gettargets(d::AudioLoader)
-    (_, ys...) = d[1]
-    ts = eltype.(ys)
-    targets = Vector{Real}[t[] for t ∈ ts]
-    for (_, ys...) ∈ d
-        for (y, target) ∈ zip(ys, targets)
-            append!(target, y)
+    if d.shuffle
+        (_, ys...) = d[1]
+        ts = eltype.(ys)
+        targets = [t[] for t ∈ ts]
+        for (_, ys...) ∈ d
+            for (y, target) ∈ zip(ys, targets)
+                append!(target, y)
+            end
         end
+        Tuple(targets)
+    else
+        d.data[2:end]
     end
-    targets
 end
