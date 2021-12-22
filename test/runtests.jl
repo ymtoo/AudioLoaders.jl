@@ -184,18 +184,22 @@ end
         z1 = dropdims(sum(x; dims=[1,2]); dims=(1,2))
         cat(z1, y[1:1,:], z[1:1,:]; dims=1)
     end
-    for withtimesec ∈ [true,false], withsamplingrate ∈ [true,false]
-        nd1 = if withtimesec && withsamplingrate
-            3
-        elseif withtimesec || withsamplingrate
-            2
+    for withtl ∈ [(true, log),(false, log)], withsr ∈ [(true, log),(false, log)]
+        Z1 = embed(f, tsloader; withtl=withtl, withsr=withsr)
+        Z2 = embed(f, specloader; withtl=withtl, withsr=withsr)
+        nd1, tlsr = if first(withtl) && first(withsr)
+            3, cat(reshape(log.(wavlens), 1, :), reshape(log.(samplingrates), 1, :); dims=1)
+        elseif first(withtl) 
+            2, reshape(log.(wavlens), 1, :)
+        elseif first(withsr)
+            2, reshape(log.(samplingrates), 1, :)
         else
-            1
+            1, nothing
         end
-        Z1 = embed(f, tsloader; withtimesec=withtimesec, withsamplingrate=withsamplingrate)
         @test size(Z1) == (nd1, length(paths))
-        Z2 = embed(f, specloader; withtimesec=withtimesec, withsamplingrate=withsamplingrate)
+        tlsr !== nothing && (@test Z1[2:end,:] == tlsr)
         @test size(Z2) == (nd1, length(paths))
+        tlsr !== nothing && (@test Z2[2:end,:] == tlsr)
     end
 end
 

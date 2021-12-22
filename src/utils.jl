@@ -112,21 +112,23 @@ by selecting the first augmented view.
 
 # Arguments
 - data : acoustic data with multiple augmented views
-- withtimesec : if `true`, includes time lengths (in seconds) of audio files in seconds 
-- withsamplingrate : if `true`, includes sampling rates of audio files in samples
+- withtl : if `true`, includes time lengths (in seconds) of audio files in seconds 
+- withsr : if `true`, includes sampling rates of audio files in samples
 
 # Returns
 - audio data in the form of first augmented view of the acoustic data and the corresponding time 
 lengths and sampling rates   
 """
-function unpack_data(data, withtimesec::Bool, withsamplingrate::Bool)
+function unpack_data(data, withtl, withsr)
     ds = first(data)
-    if withtimesec && withsamplingrate
-        first(first(ds)), ds[2], ds[3]
-    elseif withtimesec
-        first(first(ds)), ds[2]
-    elseif withsamplingrate
-        first(first(ds)), ds[3]
+    iswithtl, normalisetl = withtl
+    iswithsr, normalisesr = withsr
+    if iswithtl && iswithsr
+        first(first(ds)), normalisetl.(ds[2]), normalisesr.(ds[3])
+    elseif iswithtl
+        first(first(ds)), normalisetl.(ds[2])
+    elseif iswithsr
+        first(first(ds)), normalisesr.(ds[3])
     else
         (first(first(ds)),)
     end
