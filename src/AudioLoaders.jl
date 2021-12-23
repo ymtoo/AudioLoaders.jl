@@ -7,6 +7,7 @@ using Distributions
 using Flux: Data._nobs, Data._getobs, cpu, gpu
 using ImageTransformations
 using ProgressMeter
+using SignalAnalysis
 using Random: AbstractRNG, shuffle!, GLOBAL_RNG
 using WAV
 

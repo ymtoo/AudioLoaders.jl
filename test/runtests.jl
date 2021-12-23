@@ -212,6 +212,7 @@ end
     @test apply(CircularShift(Binomial(1,1)), x) == circshift(x, 1)
     @test apply(TimeStretch(0.0000001), x) ≈ x atol=0.1
     @test apply(PitchShift(0.0000001), x) ≈ x atol=0.1
+    @test std(apply(BackgroundNoise(), x) - x) ≈ √2 atol=0.1
 
     @test random_apply(PolarityInverse(), x; p=0) == x
     @test random_apply(PolarityInverse(), x; p=1) == -x
