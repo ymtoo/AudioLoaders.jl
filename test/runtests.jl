@@ -205,7 +205,7 @@ end
 
 @testset "augmentor" begin
     
-    n = 9600
+    n = 96000
     x = randn(n)
     @test apply(Amplify(Uniform(1.999999,2.000001)), x) ≈ 2 .* x atol=1e-3
     @test apply(PolarityInverse(), x) == -x
@@ -213,6 +213,7 @@ end
     @test apply(TimeStretch(0.0000001), x) ≈ x atol=0.1
     @test apply(PitchShift(0.0000001), x) ≈ x atol=0.1
     @test std(apply(BackgroundNoise(), x) - x) ≈ √2 atol=0.1
+    @test std(apply(BackgroundNoise(0), x) - x) ≈ √2 atol=0.1
 
     @test random_apply(PolarityInverse(), x; p=0) == x
     @test random_apply(PolarityInverse(), x; p=1) == -x

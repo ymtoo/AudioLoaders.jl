@@ -66,10 +66,11 @@ function apply(op::PitchShift, x::AbstractVector{T}) where {T}
 end
 
 struct BackgroundNoise{T} <: TSAugmentor
-    dist::T
     snrs::Union{Tuple,Real}
+    dist::T
 end
-BackgroundNoise() = BackgroundNoise(RedGaussian, 0)
+BackgroundNoise() = BackgroundNoise(0, PinkGaussian)
+BackgroundNoise(snrs) = BackgroundNoise(snrs, PinkGaussian)
 
 function apply(op::BackgroundNoise, x::AbstractVector{T}) where {T}
     snr = op.snrs isa Tuple ? rand(Uniform(op.snrs...)) : op.snrs |> T
