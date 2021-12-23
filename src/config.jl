@@ -7,13 +7,13 @@ abstract type Config end
 @kwdef struct TSConfig <: Config
     winsize::Int
     randsegment::Bool
-    augment::Function
+    preprocess_augment::Function
     nchannels::Int
     ndata::Int
 end
 TSConfig(winsize, randsegment) = TSConfig(winsize, 
                                           randsegment, 
-                                          identity,
+                                          (x, fs) -> identity(x),
                                           1, 
                                           1)
 
@@ -22,7 +22,7 @@ TSConfig(winsize, randsegment) = TSConfig(winsize,
     noverlap::Int
     window::W
     scaled::Function
-    augment::Function
+    preprocess_augment::Function
     newdims::NTuple{2,Int}
     nchannels::Int
     ndata::Int
@@ -31,7 +31,7 @@ SpecConfig(winsize, noverlap, window) = SpecConfig(winsize,
                                                    noverlap, 
                                                    window, 
                                                    a -> abs2.(a),
-                                                   identity,
+                                                   (x, fs) -> identity(x),
                                                    (100,100),
                                                    1,
                                                    1)
