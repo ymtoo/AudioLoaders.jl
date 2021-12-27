@@ -1,10 +1,17 @@
 export hz2mel, mel2hz
 export fft_frequencies, mel_frequencies
-export getmelfilters, melspectrogram
+export getmelfilters, melspectrogram, melscale
 
 """
 Mel-spectrogram.
 """
+function melscale(S::AbstractMatrix{T},
+                  nfft::Int; 
+                  nmels::Int = 128, 
+                  fs::Real=1,
+                  kwargs...) where {T}
+    getmelfilters(fs, nfft, nmels, kwargs...) * S
+end
 function melspectrogram(x::AbstractVector{T}, 
                         nfft::Int, 
                         noverlap::Int; 
@@ -13,7 +20,7 @@ function melspectrogram(x::AbstractVector{T},
                         window::Union{Function,AbstractVector,Nothing}=nothing,
                         kwargs...) where {T}
     S = stft(x, nfft, noverlap, DSP.Periodograms.PSDOnly(); fs=fs, window=window)
-    getmelfilters(fs, nfft, nmels, kwargs...) * S
+    melscale(S; nmels=nmels, fs=fs, kwargs...)
 end
 
 """

@@ -45,7 +45,7 @@ function _getaudioobs(data::Tuple,
         timesec[i] = convert(sampletype, size(x, 1) / fs)
         samplingrates[i] = convert(sampletype, fs)
         for j ∈ 1:config.ndata, k ∈ 1:config.nchannels
-            Xs[j][:,:,k,i] = config.preprocess_augment(x[:,k], fs) |> a -> rand_segment(a, config)
+            Xs[j][:,:,k,i] = config.preprocess_augment(signal(x[:,k], fs)) |> a -> rand_segment(a, config)
             #push!(Xs[j], config.augment(x, fs)) #wavread_process(data[1][ids[i]], config)
         end
     end
@@ -58,13 +58,15 @@ function _getaudioobs(data::Tuple,
     Xs = [_batchinitialize(config, batchsize) for _ ∈ 1:config.ndata]
     timesec = zeros(sampletype, batchsize)
     samplingrates = zeros(sampletype, batchsize)
-    Threads.@threads for i ∈ 1:batchsize
+    for i ∈ 1:batchsize
         x1, fs = wavread(data[1][ids[i]]; format="native")
         x = convert.(sampletype, x1) 
         timesec[i] = convert(sampletype, size(x, 1) / fs)
         samplingrates[i] = convert(sampletype, fs)
         for j ∈ 1:config.ndata, k ∈ 1:config.nchannels
-            Xs[j][:,:,k,i] = config.preprocess_augment(x[:,k], fs) |> a -> tospec(a, config)
+            Xs[j][:,:,k,i] = config.preprocess_augment(signal(x[:,k], fs)) |> 
+                             s -> tospec(s, config) |>
+                             spec -> imresize(spec, config.newdims...)
         end
     end
     return ((Xs, timesec, samplingrates), map(y -> _getobs(y, ids), data[2:end])...)#map(Base.Fix2(_getobs, ids), data[2:end])...)#
@@ -77,9 +79,9 @@ function rand_segment(x::AbstractVector{T}, config::TSConfig) where {T}
         npad = config.winsize - wavlen
         nleftpad = config.randsegment ? rand(1:npad) : npad ÷ 2
         nrightpad = npad - nleftpad
-        return [zeros(sampletype, nleftpad, config.nchannels);
-                x[:,1:config.nchannels];
-                zeros(sampletype, nrightpad, config.nchannels)]
+        return signal([zeros(sampletype, nleftpad, config.nchannels);
+                       x[:,1:config.nchannels];
+                       zeros(sampletype, nrightpad, config.nchannels)], framerate(x))
     else # wavlen > config.winsize
         nextra = wavlen - config.winsize
         startind = config.randsegment ? rand(1:nextra) : ceil(Int, nextra/2)
@@ -115,14 +117,15 @@ Transform a vector of time-series data to a scaled spectrogram specified by `con
 # Arguments
 - x : time-series audio data
 - config: SpecConfig instance
+- fs : sampling rate
 
 # Returns
 - a scaled spectrogram specified by `config`
 """
-function tospec(x::AbstractVector, config::SpecConfig)
-    spec = stft(x, config.winsize, config.noverlap; window=config.window) |>
-           a -> config.scaled(a)::Matrix{sampletype}
-    imresize(spec, config.newdims...)
+function tospec(x::SignalAnalysis.SampledSignal, config::SpecConfig)
+    stft(x, config.winsize, config.noverlap, DSP.Periodograms.PSDOnly(); window=config.window, fs=framerate(x)) |>
+    S -> config.scaled(S, framerate(x)) |>
+    sS -> convert.(sampletype, sS)
 end
 
 """

@@ -12,8 +12,8 @@ using SignalAnalysis
 using Random: AbstractRNG, shuffle!, GLOBAL_RNG
 using WAV
 
-include("config.jl")
 include("mel.jl")
+include("config.jl")
 include("audioloader.jl")
 include("utils.jl")
 include("embeddings.jl")

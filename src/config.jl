@@ -13,7 +13,7 @@ abstract type Config end
 end
 TSConfig(winsize, randsegment) = TSConfig(winsize, 
                                           randsegment, 
-                                          (x, fs) -> identity(x),
+                                          x -> identity(x),
                                           1, 
                                           1)
 
@@ -30,8 +30,8 @@ end
 SpecConfig(winsize, noverlap, window) = SpecConfig(winsize, 
                                                    noverlap, 
                                                    window, 
-                                                   a -> abs2.(a),
-                                                   (x, fs) -> identity(x),
+                                                   (a, nfft, fs) -> melscale(a, nfft; fs=fs),
+                                                   x -> identity(x),
                                                    (100,100),
                                                    1,
                                                    1)

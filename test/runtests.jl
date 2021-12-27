@@ -29,14 +29,14 @@ end
     for nc ∈ ncs
         tsconfig = TSConfig(winsize = 4800, 
                             randsegment = false, 
-                            preprocess_augment = (x,fs) -> identity(x),
+                            preprocess_augment = x -> identity(x),
                             nchannels = nc,
                             ndata = 1)
         specconfig = SpecConfig(winsize = 512,
                                 noverlap = 256,
                                 window = Windows.hanning(512),
-                                scaled = x -> pow2db.(abs2.(x)),
-                                preprocess_augment = (x,fs) -> identity(x),
+                                scaled = (a, fs) -> melscale(a, 512; fs=fs),
+                                preprocess_augment = x -> identity(x),
                                 newdims = (100,100),
                                 nchannels = nc,
                                 ndata = 1)
@@ -114,14 +114,14 @@ end
 @testset "utils" begin
     tsconfig = TSConfig(winsize = 4800, 
                             randsegment = false, 
-                            preprocess_augment = (x,fs) -> identity(x),
+                            preprocess_augment = x -> identity(x),
                             nchannels = 1,
                             ndata = 1)
     specconfig = SpecConfig(winsize = 512,
                             noverlap = 256,
                             window = Windows.hanning(512),
-                            scaled = x -> pow2db.(abs2.(x)),
-                            preprocess_augment = (x,fs) -> identity(x),
+                            scaled = (a, fs) -> melscale(a, 512; fs=fs),
+                            preprocess_augment = x -> identity(x),
                             newdims = (100,100),
                             nchannels = 1,
                             ndata = 1)
@@ -177,14 +177,14 @@ end
     
     tsconfig = TSConfig(winsize = 4800, 
                         randsegment = false, 
-                        preprocess_augment = (x,fs) -> identity(x),
+                        preprocess_augment = x -> identity(x),
                         nchannels = 1,
                         ndata = 1)
     specconfig = SpecConfig(winsize = 512,
                             noverlap = 256,
                             window = Windows.hanning(512),
-                            scaled = x -> pow2db.(abs2.(x)),
-                            preprocess_augment = (x,fs) -> identity(x),
+                            scaled = (a, fs) -> melscale(a, 512; fs=fs),
+                            preprocess_augment = x -> identity(x),
                             newdims = (100,100),
                             nchannels = 1,
                             ndata = 1)
