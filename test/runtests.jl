@@ -147,6 +147,32 @@ end
     end
 end
 
+@testset "mel" begin
+
+    @test hz2mel(60) ≈ 0.9
+    @test hz2mel.([110,220,440]) ≈ [1.65,3.3,6.6]
+    @test mel2hz(3) ≈ 200
+    @test mel2hz.([1,2,3,4,5]) ≈ [66.667,133.333,200.,266.667,333.333] atol=1e-3
+
+    @test fft_frequencies(22050, 16) == [0.,1378.125,2756.25,4134.375,
+                                         5512.5,6890.625,8268.75,9646.875,11025.]
+    @test mel_frequencies(40, 0, 11025) ≈ [      0.,     85.317,    170.635,    255.952,
+                                            341.269,    426.586,    511.904,    597.221,
+                                            682.538,    767.855,    853.173,    938.49 ,
+                                           1024.856,   1119.114,   1222.042,   1334.436,
+                                           1457.167,   1591.187,   1737.532,   1897.337,
+                                           2071.84 ,   2262.393,   2470.47 ,   2697.686,
+                                           2945.799,   3216.731,   3512.582,   3835.643,
+                                           4188.417,   4573.636,   4994.285,   5453.621,
+                                           5955.205,   6502.92 ,   7101.009,   7754.107,
+                                           8467.272,   9246.028,  10096.408,  11025.   ] atol=1e-2
+    
+    @test getmelfilters(4800, 8, 4) ≈ [0. 0.00102068 0.         0.         0.;
+                                       0. 0.00166109 0.         0.         0.;
+                                       0. 0.         0.00187853 0.         0.;
+                                       0. 0.         0.00024229 0.00123142 0.] atol=1e-3
+end
+
 @testset "embeddings" begin
     
     tsconfig = TSConfig(winsize = 4800, 
@@ -210,8 +236,8 @@ end
     @test apply(Amplify(Uniform(1.999999,2.000001)), x) ≈ 2 .* x atol=1e-3
     @test apply(PolarityInverse(), x) == -x
     @test apply(CircularShift(Binomial(1,1)), x) == circshift(x, 1)
-    @test apply(TimeStretch(0.0000001), x) ≈ x atol=0.1
-    @test apply(PitchShift(0.0000001), x) ≈ x atol=0.1
+    @test apply(TimeStretch(0.00000001), x) ≈ x atol=0.1
+    @test apply(PitchShift(0.00000001), x) ≈ x atol=0.1
     @test std(apply(BackgroundNoise(), x) - x) ≈ √2 atol=0.1
     @test std(apply(BackgroundNoise(0), x) - x) ≈ √2 atol=0.1
 

@@ -3,6 +3,7 @@ module AudioLoaders
 using Reexport
 
 using Distributions
+using DSP
 @reexport using DSP: Windows, stft, power, pow2db
 using Flux: Data._nobs, Data._getobs, cpu, gpu
 using ImageTransformations
@@ -12,6 +13,7 @@ using Random: AbstractRNG, shuffle!, GLOBAL_RNG
 using WAV
 
 include("config.jl")
+include("mel.jl")
 include("audioloader.jl")
 include("utils.jl")
 include("embeddings.jl")
