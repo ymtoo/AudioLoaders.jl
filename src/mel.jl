@@ -20,7 +20,7 @@ function melspectrogram(x::AbstractVector{T},
                         window::Union{Function,AbstractVector,Nothing}=nothing,
                         kwargs...) where {T}
     S = stft(x, nfft, noverlap, DSP.Periodograms.PSDOnly(); fs=fs, window=window)
-    melscale(S; nmels=nmels, fs=fs, kwargs...)
+    melscale(S, nfft; nmels=nmels, fs=fs, kwargs...)
 end
 
 """
@@ -47,6 +47,13 @@ function getmelfilters(fs::T,
         upper = (melfreqs[i+2] .- fftfreqs) ./ (melfreqs[i+2] - melfreqs[i+1])
         weights[i,:] = max.(0, min.(lower, upper)) .* enorm[i]
     end
+
+    # warning
+    if !all(maximum(weights; dims=2) .> 0)
+        @warn "Empty filters detected in mel frequency basis. Some channels will produce empty \
+        responses. Try increasing your nfft or reducing nmels."
+    end
+
     return weights
 end
 
