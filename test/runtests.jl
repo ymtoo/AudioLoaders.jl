@@ -32,10 +32,10 @@ end
                             preprocess_augment = x -> identity(x),
                             nchannels = nc,
                             ndata = 1)
-        specconfig = SpecConfig(winsize = 512,
-                                noverlap = 256,
-                                window = Windows.hanning(512),
-                                scaled = (a, fs) -> melscale(a, 512; fs=fs),
+        specconfig = SpecConfig(winsize = 1024,
+                                noverlap = 512,
+                                window = Windows.hanning(1024),
+                                scaled = (a, fs) -> melscale(a, 1024; fs=fs),
                                 preprocess_augment = x -> identity(x),
                                 newdims = (100,100),
                                 nchannels = nc,
@@ -117,10 +117,10 @@ end
                             preprocess_augment = x -> identity(x),
                             nchannels = 1,
                             ndata = 1)
-    specconfig = SpecConfig(winsize = 512,
-                            noverlap = 256,
-                            window = Windows.hanning(512),
-                            scaled = (a, fs) -> melscale(a, 512; fs=fs),
+    specconfig = SpecConfig(winsize = 1024,
+                            noverlap = 512,
+                            window = Windows.hanning(1024),
+                            scaled = (a, fs) -> melscale(a, 1024; fs=fs),
                             preprocess_augment = x -> identity(x),
                             newdims = (100,100),
                             nchannels = 1,
@@ -150,22 +150,35 @@ end
 @testset "mel" begin
 
     @test hz2mel(60) ≈ 0.9
+    @test hz2mel(60, true) ≈ 92.6819 atol=1e-3
     @test hz2mel.([110,220,440]) ≈ [1.65,3.3,6.6]
+    @test hz2mel.([110,220,440], true) ≈ [164.4892, 308.0, 549.6387] atol=1e-3
     @test mel2hz(3) ≈ 200
+    @test mel2hz(3, true) ≈ 1.8658 atol=1e-3
     @test mel2hz.([1,2,3,4,5]) ≈ [66.667,133.333,200.,266.667,333.333] atol=1e-3
-
+    @test mel2hz.([1,2,3,4,5], true) ≈ [0.6214, 1.2433, 1.8658, 2.4889, 3.1125] atol=1e-3
     @test fft_frequencies(22050, 16) == [0.,1378.125,2756.25,4134.375,
                                          5512.5,6890.625,8268.75,9646.875,11025.]
-    @test mel_frequencies(40, 0, 11025) ≈ [      0.,     85.317,    170.635,    255.952,
-                                            341.269,    426.586,    511.904,    597.221,
-                                            682.538,    767.855,    853.173,    938.49 ,
-                                           1024.856,   1119.114,   1222.042,   1334.436,
-                                           1457.167,   1591.187,   1737.532,   1897.337,
-                                           2071.84 ,   2262.393,   2470.47 ,   2697.686,
-                                           2945.799,   3216.731,   3512.582,   3835.643,
-                                           4188.417,   4573.636,   4994.285,   5453.621,
-                                           5955.205,   6502.92 ,   7101.009,   7754.107,
-                                           8467.272,   9246.028,  10096.408,  11025.   ] atol=1e-2
+    @test mel_frequencies(40, 0, 11025) ≈ [      0.,    85.3173,   170.6345,   255.9518,
+                                            341.2690,  426.5863,   511.9035,   597.2208,
+                                            682.5380,  767.8553,   853.1726,   938.4898,
+                                           1024.8555, 1119.1141,  1222.0418,  1334.4360,
+                                           1457.1675, 1591.1878,  1737.5322,  1897.3374,
+                                           2071.8403, 2262.3926,  2470.4705,  2697.6858,
+                                           2945.7988, 3216.7312,  3512.5820,  3835.6430,
+                                           4188.4167, 4573.6358,  4994.2846,  5453.6214,
+                                           5955.2046, 6502.9197,  7101.0094,  7754.1070,
+                                           8467.2717, 9246.0280, 10096.4081, 11025.0   ] atol=1e-2
+    @test mel_frequencies(40, 0, 11025, true) ≈ [   0.    ,   52.4593,   108.8501,   169.4668,
+                                                  234.6263,  304.6690,   379.9608,   460.8952,
+                                                  547.8949,  641.4145,   741.9427,   850.0046,
+                                                  966.1649, 1091.0305,  1225.2537,  1369.5359,
+                                                 1524.6309, 1691.3490,  1870.5612,  2063.2040,
+                                                 2270.2838, 2492.8825,  2732.1632,  2989.3761,
+                                                 3265.8650, 3563.0745,  3882.5574,  4225.9830,
+                                                 4595.1456, 4991.9739,  5418.5413,  5877.0765,
+                                                 6369.9751, 6899.8125,  7469.3570,  8081.5842,
+                                                 8739.6929, 9447.1215, 10207.5662, 11025.    ] atol=1e-2
     
     @test getmelfilters(4800, 8, 4) ≈ [0. 0.00102068 0.         0.         0.;
                                        0. 0.00166109 0.         0.         0.;
@@ -180,10 +193,10 @@ end
                         preprocess_augment = x -> identity(x),
                         nchannels = 1,
                         ndata = 1)
-    specconfig = SpecConfig(winsize = 512,
-                            noverlap = 256,
-                            window = Windows.hanning(512),
-                            scaled = (a, fs) -> melscale(a, 512; fs=fs),
+    specconfig = SpecConfig(winsize = 1024,
+                            noverlap = 512,
+                            window = Windows.hanning(1024),
+                            scaled = (a, fs) -> melscale(a, 1024; fs=fs),
                             preprocess_augment = x -> identity(x),
                             newdims = (100,100),
                             nchannels = 1,
@@ -240,8 +253,8 @@ end
         @test apply(CircularShift(Binomial(1,1)), x) == circshift(x, 1)
         @test apply(TimeStretch(0.00000001), x) ≈ x atol=0.1
         @test apply(PitchShift(0.00000001), x) ≈ x atol=0.1
-        @test std(apply(BackgroundNoise(), x) - x) ≈ √2 atol=0.1
-        @test std(apply(BackgroundNoise(0), x) - x) ≈ √2 atol=0.1
+        @test std(apply(BackgroundNoise(), x) - x) ≈ √2 atol=0.2
+        @test std(apply(BackgroundNoise(0), x) - x) ≈ √2 atol=0.2
 
         @test random_apply(PolarityInverse(), x; p=0) == x
         @test random_apply(PolarityInverse(), x; p=1) == -x

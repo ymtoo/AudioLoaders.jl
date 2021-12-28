@@ -2,9 +2,7 @@ export hz2mel, mel2hz
 export fft_frequencies, mel_frequencies
 export getmelfilters, melspectrogram, melscale
 
-"""
-Mel-spectrogram.
-"""
+
 function melscale(S::AbstractMatrix{T},
                   nfft::Int; 
                   nmels::Int = 128, 
@@ -12,6 +10,10 @@ function melscale(S::AbstractMatrix{T},
                   kwargs...) where {T}
     getmelfilters(fs, nfft, nmels, kwargs...) * S
 end
+
+"""
+Mel-spectrogram.
+"""
 function melspectrogram(x::AbstractVector{T}, 
                         nfft::Int, 
                         noverlap::Int; 
@@ -34,10 +36,11 @@ function getmelfilters(fs::T,
                        nfft::Int, 
                        nmels::Int; 
                        fmin::Real=zero(T), 
-                       fmax=fs/2) where {T<:Real}
+                       fmax::Real=fs/2,
+                       htk::Bool=false) where {T<:Real}
     weights = zeros(nmels, 1 + nfft ÷ 2)
     fftfreqs = fft_frequencies(fs, nfft)
-    melfreqs = mel_frequencies(nmels + 2, fmin, fmax)
+    melfreqs = mel_frequencies(nmels + 2, fmin, fmax, htk)
 
     # slaney-style mel
     enorm = 2 ./ (melfreqs[3:end] .- melfreqs[1:nmels])
@@ -65,18 +68,21 @@ fft_frequencies(fs::Real, nfft::Int) = range(start=0, stop=fs/2, length=1+nfft÷
 """
 Compute mel scale.
 """
-function mel_frequencies(nmels::Int, fmin::Real, fmax::Real)
-    minmel = hz2mel(fmin)
-    maxmel = hz2mel(fmax)
+function mel_frequencies(nmels::Int, fmin::Real, fmax::Real, htk::Bool=false)
+    minmel = hz2mel(fmin, htk)
+    maxmel = hz2mel(fmax, htk)
 
     mels = range(start=minmel, stop=maxmel, length=nmels) |> collect
-    mel2hz.(mels)
+    mel2hz.(mels, htk)
 end
 
 """
 Convert Hz to Mel.
 """
-function hz2mel(freq::T) where {T<:Real}
+function hz2mel(freq::T, htk::Bool=false) where {T<:Real}
+
+    htk && (return 2595 * log10(one(T) + freq / 700))
+
     fmin = 0
     fsp = 200 / 3
 
@@ -95,7 +101,10 @@ end
 """
 Convert mel bin number to frequency.
 """
-function mel2hz(mel)
+function mel2hz(mel::T, htk::Bool=false) where {T<:Real}
+
+    htk && (return 700.0 * (10.0 ^ (mel / 2595.0) - 1.0))
+
     fmin = 0
     fsp = 200 / 3
     freq = fmin + fsp * mel
