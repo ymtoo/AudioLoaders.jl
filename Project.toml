@@ -15,6 +15,9 @@ SignalAnalysis = "df1fea92-c066-49dd-8b36-eace3378ea47"
 TimeScaleModification = "2f3456fb-d83c-4ae1-8472-bfa18b739a06"
 WAV = "8149f6b0-98f6-5db9-b78f-408fbbb8ef88"
 
+[compat]
+ProgressMeter = "1"
+
 [extras]
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
