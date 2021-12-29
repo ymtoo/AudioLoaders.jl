@@ -17,6 +17,7 @@ WAV = "8149f6b0-98f6-5db9-b78f-408fbbb8ef88"
 
 [compat]
 ImageTransformations = "0.9"
+DSP = "0.7"
 
 [extras]
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
