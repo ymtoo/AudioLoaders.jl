@@ -138,6 +138,10 @@ end
                                 batchsize=batchsize,
                                 partial=true,
                                 shuffle=shuffle)
+        # shuffle before get the targets
+        tsloader[1]
+        specloader[1]
+
         tstargets = gettargets(tsloader)
         spectargets = gettargets(specloader)
         for (tstarget, spectarget, target) ∈ zip(tstargets, spectargets, (labels, probs))
