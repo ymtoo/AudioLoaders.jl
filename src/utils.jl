@@ -1,4 +1,4 @@
-export gettargets
+export resize_pad, gettargets
 
 """
 Initialize a batch 4-D array of all zeros with size of (`winsize`, 1, `config.nchannels`, `batchsize`).
@@ -15,6 +15,19 @@ function _batchinitialize(config::TSConfig, batchsize::Int)
 end
 function _batchinitialize(config::SpecConfig, batchsize::Int)
     zeros(sampletype, config.newdims..., config.nchannels, batchsize)
+end
+
+function resize_pad(x::AbstractMatrix{T}, newdims::Tuple) where {T}
+    ntime = size(x, 2)
+    xr = imresize(x, (newdims[1], ntime))
+    #xrs = zeros(T, newdims...)
+    if newdims[2] > ntime # selfpad
+        m = newdims[2] ÷ ntime
+        rem = newdims[2] % ntime
+        [repeat(xr; outer=(1, m)) xr[:,1:rem]]
+    else # left segment
+        xr[:,1:newdims[2]]
+    end
 end
 
 """
@@ -66,7 +79,7 @@ function _getaudioobs(data::Tuple,
         for j ∈ 1:config.ndata, k ∈ 1:config.nchannels
             Xs[j][:,:,k,i] = config.preprocess_augment(signal(x[:,k], fs)) |> 
                              s -> tospec(s, config) |>
-                             spec -> imresize(spec, config.newdims...)
+                             spec -> resize_pad(spec, config.newdims)#imresize(spec, config.newdims...)
         end
     end
     return ((Xs, timesec, samplingrates), map(y -> _getobs(y, ids), data[2:end])...)#map(Base.Fix2(_getobs, ids), data[2:end])...)#

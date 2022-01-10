@@ -1,6 +1,6 @@
 using AudioLoaders
 
-using DelimitedFiles, Distributions, SignalAnalysis, Test, WAV
+using DelimitedFiles, Distributions, ImageTransformations, SignalAnalysis, Test, WAV
 
 paths = readdir("data/audio/"; join=true, sort=true)
 metadata = readdlm("data/metadata.csv", ','; skipstart=1)
@@ -149,6 +149,13 @@ end
             @test spectarget == target[specloader.indices]
         end
     end
+
+    a = randn(2, 2)
+    ar = imresize(a, (4, 2))
+    @test resize_pad(a, (4, 4)) == [ar ar]
+    a = randn(3, 3)
+    ar = imresize(a, (10, 3))
+    @test resize_pad(a, (10, 2)) == ar[:,1:2]
 end
 
 @testset "mel" begin
