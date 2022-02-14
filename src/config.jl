@@ -26,6 +26,7 @@ TSConfig(winsize, randsegment) = TSConfig(winsize,
     newdims::NTuple{2,Int}
     nchannels::Int
     ndata::Int
+    padsegment::Symbol
 end
 SpecConfig(winsize, noverlap, window) = SpecConfig(winsize, 
                                                    noverlap, 
@@ -34,4 +35,5 @@ SpecConfig(winsize, noverlap, window) = SpecConfig(winsize,
                                                    x -> identity(x),
                                                    (100,100),
                                                    1,
-                                                   1)
+                                                   1,
+                                                   :center)

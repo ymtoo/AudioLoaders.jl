@@ -1,4 +1,4 @@
-export resize_pad, gettargets
+export resize_padsegment, gettargets
 
 """
 Initialize a batch 4-D array of all zeros with size of (`winsize`, 1, `config.nchannels`, `batchsize`).
@@ -17,16 +17,39 @@ function _batchinitialize(config::SpecConfig, batchsize::Int)
     zeros(sampletype, config.newdims..., config.nchannels, batchsize)
 end
 
-function resize_pad(x::AbstractMatrix{T}, newdims::Tuple) where {T}
+function resize_padsegment(x::AbstractMatrix{T}, newdims::Tuple; type::Symbol=:center) where {T}
     ntime = size(x, 2)
     xr = imresize(x, (newdims[1], ntime))
     #xrs = zeros(T, newdims...)
-    if newdims[2] > ntime # selfpad
-        m = newdims[2] ÷ ntime
-        rem = newdims[2] % ntime
-        [repeat(xr; outer=(1, m)) xr[:,1:rem]]
-    else # left segment
-        xr[:,1:newdims[2]]
+    if newdims[2] > ntime # pad
+        m = newdims[2] - ntime
+        #nextraleft = nextra ÷ 2
+        #nextraright = nextra - nextraleft
+        y = zeros(T, newdims...)
+        if type == :center
+            start = 1 + m ÷ 2
+            y[:,start:start+ntime-1] = xr
+        elseif type == :random
+            start = rand(1:m)
+            y[:,start:start+ntime-1] = xr
+        else
+            throw(ArgumentError("Invalid type"))
+        end
+        y
+        #m = newdims[2] ÷ ntime
+        #rem = newdims[2] % ntime
+        #[repeat(xr; outer=(1, m)) xr[:,1:rem]]
+    else # segment
+        m = ntime - newdims[2]
+        if type == :center
+            start = 1 + m ÷ 2
+        elseif type == :random
+            start = rand(1:m)
+        else
+            throw(ArgumentError("Invalid type"))
+        end
+        xr[:,start:start+newdims[2]-1]
+        #xr[:,1:newdims[2]]
     end
 end
 
@@ -79,7 +102,7 @@ function _getaudioobs(data::Tuple,
         for j ∈ 1:config.ndata, k ∈ 1:config.nchannels
             Xs[j][:,:,k,i] = config.preprocess_augment(signal(x[:,k], fs)) |> 
                              s -> tospec(s, config) |>
-                             spec -> resize_pad(spec, config.newdims)#imresize(spec, config.newdims...)
+                             spec -> resize_padsegment(spec, config.newdims; type=config.padsegment)#imresize(spec, config.newdims...)
         end
     end
     return ((Xs, timesec, samplingrates), map(y -> _getobs(y, ids), data[2:end])...)#map(Base.Fix2(_getobs, ids), data[2:end])...)#
