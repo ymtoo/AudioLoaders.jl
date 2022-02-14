@@ -39,7 +39,7 @@ function resize_padsegment(x::AbstractMatrix{T}, newdims::Tuple; type::Symbol=:c
         #m = newdims[2] ÷ ntime
         #rem = newdims[2] % ntime
         #[repeat(xr; outer=(1, m)) xr[:,1:rem]]
-    else # segment
+    elseif newdims[2] < ntime # segment
         m = ntime - newdims[2]
         if type == :center
             start = 1 + m ÷ 2
@@ -50,6 +50,8 @@ function resize_padsegment(x::AbstractMatrix{T}, newdims::Tuple; type::Symbol=:c
         end
         xr[:,start:start+newdims[2]-1]
         #xr[:,1:newdims[2]]
+    else
+        xr
     end
 end
 
