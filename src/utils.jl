@@ -20,12 +20,9 @@ end
 function resize_padsegment(x::AbstractMatrix{T}, newdims::Tuple; type::Symbol=:center) where {T}
     ntime = size(x, 2)
     xr = imresize(x, (newdims[1], ntime))
-    #xrs = zeros(T, newdims...)
     if newdims[2] > ntime # pad
         m = newdims[2] - ntime
-        #nextraleft = nextra ÷ 2
-        #nextraright = nextra - nextraleft
-        y = zeros(T, newdims...)
+        y = fill(minimum(xr), newdims) #zeros(T, newdims...)
         if type == :center
             start = 1 + m ÷ 2
             y[:,start:start+ntime-1] = xr

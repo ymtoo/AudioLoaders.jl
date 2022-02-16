@@ -157,7 +157,8 @@ end
 
     a = randn(Float64, 2, 2)
     ar = imresize(a, (4, 2))
-    @test resize_padsegment(a, (4, 4); type = :center) == [zeros(Float64, 4, 1) ar zeros(Float64, 4, 1)]
+    pad = fill(minimum(ar), 4, 1)
+    @test resize_padsegment(a, (4, 4); type = :center) == [pad ar pad]
     a = randn(3, 3)
     ar = imresize(a, (10, 3))
     @test resize_padsegment(a, (10, 2); type = :center) == ar[:,1:2]
