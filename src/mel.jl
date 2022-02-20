@@ -53,8 +53,13 @@ function getmelfilters(fs::T,
 
     # warning
     if !all(maximum(weights; dims=2) .> 0)
-        @warn "Empty filters detected in mel frequency basis. Some channels will produce empty \
-        responses. Try increasing your nfft or reducing nmels."
+        if VERSION ≥ v"1.7.0"
+            @warn "Empty filters detected in mel frequency basis. Some channels will produce empty \
+            responses. Try increasing your nfft or reducing nmels."
+        else
+            @warn "Empty filters detected in mel frequency basis. Some channels will produce empty " * 
+            "responses. Try increasing your nfft or reducing nmels."
+        end
     end
 
     return weights
