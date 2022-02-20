@@ -204,8 +204,8 @@ function gettargets(d::AudioLoader)
     targets = d.data[2:end]
     n = length(targets)
     if d.shuffle 
-        @warn "The shuffled targets only corresponds to the latest iteration. Reiterate the \
-               first item will shuffle targets again."
+        @warn "The shuffled targets only corresponds to the latest iteration. Reiterate the " *
+              "first item will shuffle targets again."
         targets = Tuple([target[d.indices] for target ∈ targets])
     end
     n == 1 ? only(targets) : targets
