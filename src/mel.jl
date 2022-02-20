@@ -79,7 +79,7 @@ function mel_frequencies(nmels::Int, fmin::Real, fmax::Real, htk::Bool=false)
     mels = if VERSION ≥ v"1.7.0"
         range(start=minmel, stop=maxmel, length=nmels)
     else
-        range(minmel; stop=maxmel, length=nmel)
+        range(minmel; stop=maxmel, length=nmels)
     end |> collect
     mel2hz.(mels, htk)
 end
