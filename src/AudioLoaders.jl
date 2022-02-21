@@ -5,6 +5,7 @@ using Reexport
 using Distributions
 using DSP
 @reexport using DSP: Windows, stft, power, pow2db
+using FLoops
 using Flux: Data._nobs, Data._getobs, cpu, gpu
 using ImageTransformations
 using ProgressMeter

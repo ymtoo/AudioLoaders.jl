@@ -73,7 +73,7 @@ function _getaudioobs(data::Tuple,
     Xs = [_batchinitialize(config, batchsize) for _ ∈ 1:config.ndata]
     timesec = zeros(sampletype, batchsize)
     samplingrates = zeros(sampletype, batchsize)
-    Threads.@threads for i ∈ 1:batchsize
+    @floop for i ∈ 1:batchsize
         #xsize = first(wavread(data[1][ids[i]]; format="size"))
         x1, fs = wavread(data[1][ids[i]]; format="native")
         x = convert.(sampletype, x1)
@@ -93,7 +93,7 @@ function _getaudioobs(data::Tuple,
     Xs = [_batchinitialize(config, batchsize) for _ ∈ 1:config.ndata]
     timesec = zeros(sampletype, batchsize)
     samplingrates = zeros(sampletype, batchsize)
-    Threads.@threads for i ∈ 1:batchsize
+    @floop for i ∈ 1:batchsize
         x1, fs = wavread(data[1][ids[i]]; format="native")
         x = convert.(sampletype, x1) 
         timesec[i] = convert(sampletype, size(x, 1) / fs)
