@@ -262,9 +262,10 @@ end
 
 @testset "augmentor" begin
     
-    n = 96000
-    x1 = randn(n)
-    x2 = signal(x1, 9600)
+    n1 = 96000
+    x1 = randn(n1)
+    n2 = 9600
+    x2 = signal(x1, n2)
     for x ∈ [x1, x2]
         @test apply(Amplify(Uniform(1.999999,2.000001)), x) ≈ 2 .* x atol=1e-3
         @test apply(PolarityInverse(), x) == -x
@@ -273,6 +274,9 @@ end
         @test apply(PitchShift(0.00000001), x) ≈ x atol=0.1
         @test std(apply(BackgroundNoise(), x) - x) ≈ √2 atol=0.2
         @test std(apply(BackgroundNoise(0), x) - x) ≈ √2 atol=0.2
+        @test apply(TimeMask(length(x),length(x), 1e-10, 1e-9), x) ≈ x atol=0.01 
+        mask = ((cos.(2π * (0:length(x) .- 1) ./ (length(x) .- 1)) .+ 1) ./ 2)
+        @test apply(TimeMask(length(x),length(x), 1-1e-9, 1-1e-10), x) ≈ (x .* mask) atol=0.1 
 
         @test random_apply(PolarityInverse(), x; p=0) == x
         @test random_apply(PolarityInverse(), x; p=1) == -x

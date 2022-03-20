@@ -1,7 +1,7 @@
 using TimeScaleModification
 
 export Identity, Amplify, PolarityInverse, CircularShift, 
-       TimeStretch, PitchShift, BackgroundNoise
+       TimeStretch, PitchShift, BackgroundNoise, TimeMask
 export apply, random_apply
 
 abstract type TSAugmentor end
@@ -101,6 +101,29 @@ function apply(op::BackgroundNoise, x::AbstractVector{T}) where {T}
     a = sqrt((2 * pnoise) / (10 ^ (snr / 10))) |> T
     a .* noise .+ x
 end
+
+struct TimeMask{T,R<:AbstractRNG} <: TSAugmentor
+    lengthrange::Tuple{Int,Int}
+    scaledist::T
+    rng::R
+end
+TimeMask(lengthrange, scaledist) = TimeMask(lengthrange, scaledist, GLOBAL_RNG)
+TimeMask(lengthmin, lengthmax, scalemin, scalemax) = TimeMask((lengthmin, lengthmax), 
+                                                              Uniform(scalemin, scalemax),
+                                                              GLOBAL_RNG)
+                                                
+
+function apply(op::TimeMask, x::AbstractVector{T}) where {T}
+    length(x) < maximum(op.lengthrange) && throw(ArgumentError("Length of mask is greater than length of `x`")) 
+    l = rand(op.rng, range(op.lengthrange...))
+    s = rand(op.rng, op.scaledist)
+    start = rand(op.rng, 1:(length(x) - l + 1))
+    mask = (one(T) - s) .+ s .* (cos.(2π .* range(0,l-one(T)) ./ (l-one(T))) .+ one(T)) ./ 2
+    y = copy(x)
+    y[start:start+l-1] .*= mask
+    y
+end
+
 
 function random_apply(op::TSAugmentor, x; p=1.0)
     if rand(op.rng) < p
