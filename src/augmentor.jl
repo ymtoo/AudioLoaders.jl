@@ -112,7 +112,6 @@ TimeMask(lengthmin, lengthmax, scalemin, scalemax) = TimeMask((lengthmin, length
                                                               Uniform(scalemin, scalemax),
                                                               GLOBAL_RNG)
                                                 
-
 function apply(op::TimeMask, x::AbstractVector{T}) where {T}
     length(x) < maximum(op.lengthrange) && throw(ArgumentError("Length of mask is greater than length of `x`")) 
     l = rand(op.rng, range(op.lengthrange...))
