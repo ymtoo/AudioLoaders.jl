@@ -1,4 +1,4 @@
-export resize_padsegment, gettargets
+export freqmaxpool_padsegment, gettargets
 
 """
 Initialize a batch 4-D array of all zeros with size of (`winsize`, 1, `config.nchannels`, `batchsize`).
@@ -17,9 +17,15 @@ function _batchinitialize(config::SpecConfig, batchsize::Int)
     zeros(sampletype, config.newdims..., config.nchannels, batchsize)
 end
 
-function resize_padsegment(x::AbstractMatrix{T}, newdims::Tuple; type::Symbol=:center) where {T}
+function freqmaxpool_padsegment(x::AbstractMatrix{T}, newdims::Tuple; type::Symbol=:center) where {T}
     nfreq, ntime = size(x)
-    xr = nfreq == newdims[1] ? x : imresize(x, (newdims[1], ntime))
+    xr = if nfreq == newdims[1] 
+            x 
+         else
+            mp = nfreq ÷ newdims[1] # to the nearest integer 
+            mod(nfreq, newdims[1]) != 0 && ((nfreq - 1) ÷ newdims[1] != mp) && throw(ArgumentError("Invalid newdims for frequency"))
+            MaxPool((mp,1))(reshape(x, size(x)..., 1, 1))[:,:,1,1]
+         end#imresize(x, (newdims[1], ntime))
     if newdims[2] > ntime # pad
         m = newdims[2] - ntime
         y = fill(minimum(xr), newdims) #zeros(T, newdims...)
@@ -101,7 +107,7 @@ function _getaudioobs(data::Tuple,
         for j ∈ 1:config.ndata, k ∈ 1:config.nchannels
             Xs[j][:,:,k,i] = config.preprocess_augment(signal(x[:,k], fs)) |> 
                              s -> tospec(s, config) |>
-                             spec -> resize_padsegment(spec, config.newdims; type=config.padsegment)#imresize(spec, config.newdims...)
+                             spec -> freqmaxpool_padsegment(spec, config.newdims; type=config.padsegment)#imresize(spec, config.newdims...)
         end
     end
     return ((Xs, timesec, samplingrates), map(y -> _getobs(y, ids), data[2:end])...)#map(Base.Fix2(_getobs, ids), data[2:end])...)#

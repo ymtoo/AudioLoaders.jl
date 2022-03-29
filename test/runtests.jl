@@ -1,6 +1,6 @@
 using AudioLoaders
 
-using DelimitedFiles, Distributions, ImageTransformations, SignalAnalysis, Test, WAV
+using DelimitedFiles, Distributions, Flux, ImageTransformations, SignalAnalysis, Test, WAV
 
 paths = readdir("data/audio/"; join=true, sort=true)
 metadata = readdlm("data/metadata.csv", ','; skipstart=1)
@@ -39,7 +39,7 @@ end
                                     window = Windows.hanning(1024),
                                     scaled = (a, fs) -> melscale(a, 1024; fs=fs),
                                     preprocess_augment = x -> identity(x),
-                                    newdims = (100,100),
+                                    newdims = (128,100),
                                     nchannels = nc,
                                     ndata = 1,
                                     padsegment = padsegment)
@@ -126,7 +126,7 @@ end
                             window = Windows.hanning(1024),
                             scaled = (a, fs) -> melscale(a, 1024; fs=fs),
                             preprocess_augment = x -> identity(x),
-                            newdims = (100,100),
+                            newdims = (128,100),
                             nchannels = 1,
                             ndata = 1,
                             padsegment = :center)
@@ -156,14 +156,14 @@ end
     end
 
     a = randn(Float64, 2, 2)
-    ar = imresize(a, (4, 2))
-    pad = fill(minimum(ar), 4, 1)
-    @test resize_padsegment(a, (4, 4); type = :center) == [pad ar pad]
+    ar = MaxPool((2,1))(reshape(a, size(a)..., 1, 1))[:,:,1,1]#imresize(a, (4, 2))
+    pad = fill(minimum(ar), 1, 1)
+    @test freqmaxpool_padsegment(a, (1, 4); type = :center) == [pad ar pad]
+    a = randn(6, 3)
+    ar = MaxPool((2,1))(reshape(a, size(a)..., 1, 1))[:,:,1,1]#imresize(a, (10, 3))
+    @test freqmaxpool_padsegment(a, (3, 2); type = :center) == ar[:,1:2]
     a = randn(3, 3)
-    ar = imresize(a, (10, 3))
-    @test resize_padsegment(a, (10, 2); type = :center) == ar[:,1:2]
-    a = randn(3, 3)
-    @test resize_padsegment(a, (3, 3)) == a
+    @test freqmaxpool_padsegment(a, (3, 3)) == a
 
 end
 
@@ -218,7 +218,7 @@ end
                             window = Windows.hanning(1024),
                             scaled = (a, fs) -> melscale(a, 1024; fs=fs),
                             preprocess_augment = x -> identity(x),
-                            newdims = (100,100),
+                            newdims = (128,100),
                             nchannels = 1,
                             ndata = 1,
                             padsegment = :center)

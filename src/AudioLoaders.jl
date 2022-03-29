@@ -5,8 +5,9 @@ using Reexport
 using Distributions
 using DSP
 @reexport using DSP: Windows, stft, power, pow2db
-using Flux: Data._nobs, Data._getobs, cpu, gpu
-using ImageTransformations
+using Flux: Data._nobs, Data._getobs, cpu, gpu, MaxPool
+#import ImageFiltering: mapwindow
+#using ImageTransformations
 using ProgressMeter
 using SignalAnalysis
 using Random: AbstractRNG, shuffle!, GLOBAL_RNG
