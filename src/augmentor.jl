@@ -129,6 +129,7 @@ struct FrequencyShift{T<:UnivariateDistribution{Continuous},R<:AbstractRNG} <: T
     shiftdist::T
     rng::R
 end
+FrequencyShift(σ::Number, rng::R) where {R<:AbstractRNG} = FrequencyShift(Normal(0, σ), rng)
 FrequencyShift(σ::Number) = FrequencyShift(Normal(0, σ), GLOBAL_RNG)
 
 """
