@@ -1,7 +1,9 @@
 using TimeScaleModification
 
 export Identity, Amplify, PolarityInverse, CircularShift, 
-       TimeStretch, PitchShift, BackgroundNoise, TimeMask
+       TimeStretch, PitchShift, BackgroundNoise, TimeMask,
+       FrequencyShift
+
 export apply, random_apply
 
 abstract type TSAugmentor end
@@ -123,6 +125,26 @@ function apply(op::TimeMask, x::AbstractVector{T}) where {T}
     y
 end
 
+struct FrequencyShift{T<:UnivariateDistribution{Continuous}} <: TSAugmentor
+    shiftdist::T
+end
+FrequencyShift(σ::Number) = FrequencyShift(Normal(0, σ))
+
+"""
+Frequency shift of `x`.
+
+Reference
+https://gist.github.com/lebedov/4428122
+"""
+function apply(op::FrequencyShift, x::AbstractVector{T}) where {T}
+    shift = convert(T, rand(op.shiftdist))
+    dt = T(1e-3)
+    N = length(x)
+    Np = nextpow(2, N)
+    t = range(0, length=Np)
+    xpad = [x;zeros(T,Np-N)]
+    real((hilbert(xpad) .* exp.(T(2)im * π * shift * dt * t))[1:N])
+end
 
 function random_apply(op::TSAugmentor, x; p=1.0)
     if rand(op.rng) < p

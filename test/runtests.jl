@@ -280,6 +280,7 @@ end
         @test apply(TimeMask(length(x),length(x), 1e-10, 1e-9), x) ≈ x atol=0.01 
         mask = ((cos.(2π * (0:length(x) .- 1) ./ (length(x) .- 1)) .+ 1) ./ 2)
         @test apply(TimeMask(length(x),length(x), 1-1e-9, 1-1e-10), x) ≈ (x .* mask) atol=0.1 
+        @test apply(FrequencyShift(0), x) ≈ x atol=1e-6
 
         @test random_apply(PolarityInverse(), x; p=0) == x
         @test random_apply(PolarityInverse(), x; p=1) == -x
