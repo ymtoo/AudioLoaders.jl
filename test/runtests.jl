@@ -30,7 +30,8 @@ end
     for nc ∈ ncs
         for padsegment ∈ padsegments
             tsconfig = TSConfig(winsize = 4800, 
-                                preprocess_augment = x -> identity(x),
+                                preprocess = x -> identity(x),
+                                augment = x -> identity(x),
                                 nchannels = nc,
                                 ndata = 1,
                                 padsegment = :center)
@@ -118,7 +119,8 @@ end
 
 @testset "utils" begin
     tsconfig = TSConfig(winsize = 4800, 
-                        preprocess_augment = x -> identity(x),
+                        preprocess = x -> identity(x),
+                        augment = x -> identity(x),
                         nchannels = 1,
                         ndata = 1,
                         padsegment = :center)
@@ -211,7 +213,8 @@ end
 @testset "embeddings" begin
     
     tsconfig = TSConfig(winsize = 4800, 
-                        preprocess_augment = x -> identity(x),
+                        preprocess = x -> identity(x),
+                        augment = x -> identity(x),
                         nchannels = 1,
                         ndata = 1,
                         padsegment = :center)

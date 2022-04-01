@@ -94,8 +94,9 @@ function _getaudioobs(data::Tuple,
         timesec[i] = convert(sampletype, size(x, 1) / fs)
         samplingrates[i] = convert(sampletype, fs)
         for j ∈ 1:config.ndata, k ∈ 1:config.nchannels
-            Xs[j][:,:,k,i] = rand_padsegment(signal(x[:,k], fs), config) |>
-                             a -> config.preprocess_augment(a) 
+            Xs[j][:,:,k,i] = config.preprocess(signal(x[:,k], fs)) |>
+                             s -> rand_padsegment(s, config) |>
+                             s -> config.augment(s) 
             #push!(Xs[j], config.augment(x, fs)) #wavread_process(data[1][ids[i]], config)
         end
     end

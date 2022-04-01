@@ -6,12 +6,14 @@ abstract type Config end
 
 @kwdef struct TSConfig <: Config
     winsize::Int
-    preprocess_augment::Function
+    preprocess::Function
+    augment::Function
     nchannels::Int
     ndata::Int
     padsegment::Symbol
 end
 TSConfig(winsize) = TSConfig(winsize, 
+                             x -> identity(x),
                              x -> identity(x),
                              1, 
                              1,
