@@ -109,12 +109,12 @@ function _getaudioobs(data::Tuple,
     timesec = zeros(sampletype, batchsize)
     samplingrates = zeros(sampletype, batchsize)
     nstride = config.winsize - config.noverlap
+    n = nstride * config.newdims[2] + nstride
     Threads.@threads for i ∈ 1:batchsize
         x1, fs = wavread(data[1][ids[i]]; format="native")
         x = convert.(sampletype, x1) 
         timesec[i] = convert(sampletype, size(x, 1) / fs)
         samplingrates[i] = convert(sampletype, fs)
-        n = nstride * config.newdims[2] + nstride
         for j ∈ 1:config.ndata, k ∈ 1:config.nchannels
             Xs[j][:,:,k,i] = config.preprocess(signal(x[:,k], fs)) |> 
                              s -> rand_padsegment(s, n, config.padsegment) |>
