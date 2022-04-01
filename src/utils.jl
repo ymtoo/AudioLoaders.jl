@@ -17,6 +17,17 @@ function _batchinitialize(config::SpecConfig, batchsize::Int)
     zeros(sampletype, config.newdims..., config.nchannels, batchsize)
 end
 
+function freqmaxpool(x::AbstractMatrix{T}, newnfreq::Int) where {T}
+    nfreq = size(x,1)
+    if nfreq == newnfreq
+        x 
+    else
+        mp = nfreq ÷ newnfreq # to the nearest integer 
+        mod(nfreq, newnfreq) != 0 && ((nfreq - 1) ÷ newnfreq != mp) && throw(ArgumentError("Invalid newdims for frequency"))
+        MaxPool((mp,1))(reshape(x, size(x)..., 1, 1))[:,:,1,1]
+    end 
+end
+
 function freqmaxpool_padsegment(x::AbstractMatrix{T}, newdims::Tuple; type::Symbol=:center) where {T}
     nfreq, ntime = size(x)
     xr = if nfreq == newdims[1] 
@@ -39,9 +50,6 @@ function freqmaxpool_padsegment(x::AbstractMatrix{T}, newdims::Tuple; type::Symb
             throw(ArgumentError("Invalid padsegment type"))
         end
         y
-        #m = newdims[2] ÷ ntime
-        #rem = newdims[2] % ntime
-        #[repeat(xr; outer=(1, m)) xr[:,1:rem]]
     elseif newdims[2] < ntime # segment
         m = ntime - newdims[2]
         if type == :center
@@ -86,7 +94,8 @@ function _getaudioobs(data::Tuple,
         timesec[i] = convert(sampletype, size(x, 1) / fs)
         samplingrates[i] = convert(sampletype, fs)
         for j ∈ 1:config.ndata, k ∈ 1:config.nchannels
-            Xs[j][:,:,k,i] = config.preprocess_augment(signal(x[:,k], fs)) |> a -> rand_padsegment(a, config)
+            Xs[j][:,:,k,i] = rand_padsegment(signal(x[:,k], fs), config) |>
+                             a -> config.preprocess_augment(a) 
             #push!(Xs[j], config.augment(x, fs)) #wavread_process(data[1][ids[i]], config)
         end
     end
@@ -99,15 +108,19 @@ function _getaudioobs(data::Tuple,
     Xs = [_batchinitialize(config, batchsize) for _ ∈ 1:config.ndata]
     timesec = zeros(sampletype, batchsize)
     samplingrates = zeros(sampletype, batchsize)
+    nstride = config.winsize - config.noverlap
     Threads.@threads for i ∈ 1:batchsize
         x1, fs = wavread(data[1][ids[i]]; format="native")
         x = convert.(sampletype, x1) 
         timesec[i] = convert(sampletype, size(x, 1) / fs)
         samplingrates[i] = convert(sampletype, fs)
+        n = nstride * config.newdims[2] + nstride
         for j ∈ 1:config.ndata, k ∈ 1:config.nchannels
-            Xs[j][:,:,k,i] = config.preprocess_augment(signal(x[:,k], fs)) |> 
+            Xs[j][:,:,k,i] = rand_padsegment(signal(x[:,k], fs), n, config.padsegment) |>
+                             a -> config.preprocess_augment(a) |> 
                              s -> tospec(s, config) |>
-                             spec -> freqmaxpool_padsegment(spec, config.newdims; type=config.padsegment)#imresize(spec, config.newdims...)
+                             spec -> freqmaxpool(spec, config.newdims[1])
+                             #spec -> freqmaxpool_padsegment(spec, config.newdims; type=config.padsegment)#imresize(spec, config.newdims...)
         end
     end
     return ((Xs, timesec, samplingrates), map(y -> _getobs(y, ids), data[2:end])...)#map(Base.Fix2(_getobs, ids), data[2:end])...)#
