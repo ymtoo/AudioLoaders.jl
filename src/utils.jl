@@ -36,7 +36,7 @@ function freqmaxpool_padsegment(x::AbstractMatrix{T}, newdims::Tuple; type::Symb
             start = rand(1:m)
             y[:,start:start+ntime-1] = xr
         else
-            throw(ArgumentError("Invalid type"))
+            throw(ArgumentError("Invalid padsegment type"))
         end
         y
         #m = newdims[2] ÷ ntime
@@ -49,7 +49,7 @@ function freqmaxpool_padsegment(x::AbstractMatrix{T}, newdims::Tuple; type::Symb
         elseif type == :random
             start = rand(1:m)
         else
-            throw(ArgumentError("Invalid type"))
+            throw(ArgumentError("Invalid padsegment type"))
         end
         xr[:,start:start+newdims[2]-1]
         #xr[:,1:newdims[2]]
@@ -86,7 +86,7 @@ function _getaudioobs(data::Tuple,
         timesec[i] = convert(sampletype, size(x, 1) / fs)
         samplingrates[i] = convert(sampletype, fs)
         for j ∈ 1:config.ndata, k ∈ 1:config.nchannels
-            Xs[j][:,:,k,i] = config.preprocess_augment(signal(x[:,k], fs)) |> a -> rand_segment(a, config)
+            Xs[j][:,:,k,i] = config.preprocess_augment(signal(x[:,k], fs)) |> a -> rand_padsegment(a, config)
             #push!(Xs[j], config.augment(x, fs)) #wavread_process(data[1][ids[i]], config)
         end
     end
@@ -113,22 +113,56 @@ function _getaudioobs(data::Tuple,
     return ((Xs, timesec, samplingrates), map(y -> _getobs(y, ids), data[2:end])...)#map(Base.Fix2(_getobs, ids), data[2:end])...)#
 end
 
-function rand_segment(x::AbstractVector{T}, config::TSConfig) where {T}
+function rand_padsegment(x::AbstractVector{T}, winsize::Int, type::Symbol) where {T}
     wavlen = length(x)
-    if wavlen ≤ config.winsize
-        wavlen == config.winsize && (return x)
-        npad = config.winsize - wavlen
-        nleftpad = config.randsegment ? rand(1:npad) : npad ÷ 2
+    if wavlen < winsize
+        wavlen == winsize && (return x)
+        npad = winsize - wavlen
+        nleftpad = if type == :random
+            rand(1:npad)
+        elseif type == :center
+            npad ÷ 2
+        else
+            throw(ArgumentError("Invalid padsegment type"))
+        end  
         nrightpad = npad - nleftpad
-        return signal([zeros(sampletype, nleftpad, config.nchannels);
-                       x[:,1:config.nchannels];
-                       zeros(sampletype, nrightpad, config.nchannels)], framerate(x))
-    else # wavlen > config.winsize
-        nextra = wavlen - config.winsize
-        startind = config.randsegment ? rand(1:nextra) : ceil(Int, nextra/2)
-        return x[(1+startind):(startind+config.winsize)]
+        return signal([zeros(sampletype, nleftpad);
+                       x;
+                       zeros(sampletype, nrightpad)], framerate(x))
+    elseif wavlen > winsize
+        nextra = wavlen - winsize
+        startind = if type == :random
+            rand(1:nextra)
+        elseif type == :center
+            ceil(Int, nextra/2)
+        else
+            throw(ArgumentError("Invalid padsegment type"))
+        end
+        return signal(x[(1+startind):(startind+winsize)], framerate(x))
+    else
+        signal(x, framerate(x))
     end
 end
+function rand_padsegment(x::AbstractVector{T}, config::TSConfig) where {T}
+    rand_padsegment(x, config.winsize, config.padsegment)
+end
+# function rand_segment(x::AbstractVector{T}, config::TSConfig) where {T}
+#     wavlen = length(x)
+#     if wavlen ≤ config.winsize
+#         wavlen == config.winsize && (return x)
+#         npad = config.winsize - wavlen
+#         nleftpad = config.randsegment ? rand(1:npad) : npad ÷ 2
+#         nrightpad = npad - nleftpad
+#         return signal([zeros(sampletype, nleftpad, config.nchannels);
+#                        x[:,1:config.nchannels];
+#                        zeros(sampletype, nrightpad, config.nchannels)], framerate(x))
+#     else # wavlen > config.winsize
+#         nextra = wavlen - config.winsize
+#         startind = config.randsegment ? rand(1:nextra) : ceil(Int, nextra/2)
+#         return x[(1+startind):(startind+config.winsize)]
+#     end
+# end
+
 
 # function wavread_process(wavpath::AbstractString, config::TSConfig)
 #     wavlen = first(wavread(wavpath; format="size"))::Int

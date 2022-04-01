@@ -30,10 +30,10 @@ end
     for nc ∈ ncs
         for padsegment ∈ padsegments
             tsconfig = TSConfig(winsize = 4800, 
-                                randsegment = false, 
                                 preprocess_augment = x -> identity(x),
                                 nchannels = nc,
-                                ndata = 1)
+                                ndata = 1,
+                                padsegment = :center)
             specconfig = SpecConfig(winsize = 1024,
                                     noverlap = 512,
                                     window = Windows.hanning(1024),
@@ -117,10 +117,10 @@ end
 
 @testset "utils" begin
     tsconfig = TSConfig(winsize = 4800, 
-                            randsegment = false, 
-                            preprocess_augment = x -> identity(x),
-                            nchannels = 1,
-                            ndata = 1)
+                        preprocess_augment = x -> identity(x),
+                        nchannels = 1,
+                        ndata = 1,
+                        padsegment = :center)
     specconfig = SpecConfig(winsize = 1024,
                             noverlap = 512,
                             window = Windows.hanning(1024),
@@ -209,10 +209,10 @@ end
 @testset "embeddings" begin
     
     tsconfig = TSConfig(winsize = 4800, 
-                        randsegment = false, 
                         preprocess_augment = x -> identity(x),
                         nchannels = 1,
-                        ndata = 1)
+                        ndata = 1,
+                        padsegment = :center)
     specconfig = SpecConfig(winsize = 1024,
                             noverlap = 512,
                             window = Windows.hanning(1024),

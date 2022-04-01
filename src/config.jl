@@ -6,16 +6,16 @@ abstract type Config end
 
 @kwdef struct TSConfig <: Config
     winsize::Int
-    randsegment::Bool
     preprocess_augment::Function
     nchannels::Int
     ndata::Int
+    padsegment::Symbol
 end
-TSConfig(winsize, randsegment) = TSConfig(winsize, 
-                                          randsegment, 
-                                          x -> identity(x),
-                                          1, 
-                                          1)
+TSConfig(winsize) = TSConfig(winsize, 
+                             x -> identity(x),
+                             1, 
+                             1,
+                             :center)
 
 @kwdef struct SpecConfig{W} <: Config
     winsize::Int
