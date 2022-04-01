@@ -22,7 +22,8 @@ TSConfig(winsize) = TSConfig(winsize,
     noverlap::Int
     window::W
     scaled::Function
-    preprocess_augment::Function
+    preprocess::Function
+    augment::Function
     newdims::NTuple{2,Int}
     nchannels::Int
     ndata::Int
@@ -32,6 +33,7 @@ SpecConfig(winsize, noverlap, window) = SpecConfig(winsize,
                                                    noverlap, 
                                                    window, 
                                                    (a, nfft, fs) -> melscale(a, nfft; fs=fs),
+                                                   x -> identity(x),
                                                    x -> identity(x),
                                                    (100,100),
                                                    1,

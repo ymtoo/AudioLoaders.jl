@@ -116,8 +116,9 @@ function _getaudioobs(data::Tuple,
         samplingrates[i] = convert(sampletype, fs)
         n = nstride * config.newdims[2] + nstride
         for j ∈ 1:config.ndata, k ∈ 1:config.nchannels
-            Xs[j][:,:,k,i] = rand_padsegment(signal(x[:,k], fs), n, config.padsegment) |>
-                             a -> config.preprocess_augment(a) |> 
+            Xs[j][:,:,k,i] = config.preprocess(signal(x[:,k], fs)) |> 
+                             s -> rand_padsegment(s, n, config.padsegment) |>
+                             s -> config.augment(s) |> 
                              s -> tospec(s, config) |>
                              spec -> freqmaxpool(spec, config.newdims[1])
                              #spec -> freqmaxpool_padsegment(spec, config.newdims; type=config.padsegment)#imresize(spec, config.newdims...)
