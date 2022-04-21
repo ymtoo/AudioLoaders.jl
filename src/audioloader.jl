@@ -29,7 +29,7 @@ function AudioLoader(data,
                      shuffle=false,
                      partial=true,
                      rng=GLOBAL_RNG)
-    n = _nobs(data)
+    n = numobs(data)
     if n < batchsize
         @warn "Number of observations less than batchsize, decreasing the batchsize to $n"
         batchsize = n

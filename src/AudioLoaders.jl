@@ -5,7 +5,8 @@ using Reexport
 using Distributions
 using DSP
 @reexport using DSP: Windows, stft, power, pow2db
-using Flux: Data._nobs, Data._getobs, cpu, gpu, MaxPool
+using MLUtils: numobs, getobs
+using Flux: cpu, gpu, MaxPool
 #import ImageFiltering: mapwindow
 #using ImageTransformations
 using ProgressMeter

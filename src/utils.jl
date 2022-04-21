@@ -100,7 +100,7 @@ function _getaudioobs(data::Tuple,
             #push!(Xs[j], config.augment(x, fs)) #wavread_process(data[1][ids[i]], config)
         end
     end
-    return ((Xs, timesec, samplingrates), map(y -> _getobs(y, ids), data[2:end])...)#map(Base.Fix2(_getobs, ids), data[2:end])...)
+    return ((Xs, timesec, samplingrates), map(y -> getobs(y, ids), data[2:end])...)#map(Base.Fix2(_getobs, ids), data[2:end])...)
 end
 function _getaudioobs(data::Tuple, 
                       config::SpecConfig,
@@ -125,7 +125,7 @@ function _getaudioobs(data::Tuple,
                              #spec -> freqmaxpool_padsegment(spec, config.newdims; type=config.padsegment)#imresize(spec, config.newdims...)
         end
     end
-    return ((Xs, timesec, samplingrates), map(y -> _getobs(y, ids), data[2:end])...)#map(Base.Fix2(_getobs, ids), data[2:end])...)#
+    return ((Xs, timesec, samplingrates), map(y -> getobs(y, ids), data[2:end])...)#map(Base.Fix2(_getobs, ids), data[2:end])...)#
 end
 
 function rand_padsegment(x::AbstractVector{T}, winsize::Int, type::Symbol) where {T}
