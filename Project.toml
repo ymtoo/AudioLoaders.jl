@@ -17,6 +17,7 @@ TimeScaleModification = "2f3456fb-d83c-4ae1-8472-bfa18b739a06"
 WAV = "8149f6b0-98f6-5db9-b78f-408fbbb8ef88"
 
 [compat]
+ImageTransformations = "0.9"
 DSP = "0.6, 0.7"
 julia = "1.6"
 
