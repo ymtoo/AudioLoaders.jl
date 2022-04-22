@@ -17,6 +17,7 @@ TimeScaleModification = "2f3456fb-d83c-4ae1-8472-bfa18b739a06"
 WAV = "8149f6b0-98f6-5db9-b78f-408fbbb8ef88"
 
 [compat]
+SignalAnalysis = "0.4"
 Reexport = "1"
 Distributions = "0.25"
 ProgressMeter = "1"
