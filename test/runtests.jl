@@ -1,6 +1,6 @@
 using AudioLoaders
 
-using DelimitedFiles, Distributions, SignalAnalysis, Test, WAV
+using DelimitedFiles, Distributions, Flux, ImageTransformations, SignalAnalysis, Test, WAV
 
 paths = readdir("data/audio/"; join=true, sort=true)
 metadata = readdlm("data/metadata.csv", ','; skipstart=1)
@@ -26,84 +26,90 @@ end
 
 @testset "AudioLoader" begin
     ncs = [1]
+    padsegments = [:center, :random]
     for nc ∈ ncs
-        tsconfig = TSConfig(winsize = 4800, 
-                            randsegment = false, 
-                            preprocess_augment = x -> identity(x),
-                            nchannels = nc,
-                            ndata = 1)
-        specconfig = SpecConfig(winsize = 1024,
-                                noverlap = 512,
-                                window = Windows.hanning(1024),
-                                scaled = (a, fs) -> melscale(a, 1024; fs=fs),
-                                preprocess_augment = x -> identity(x),
-                                newdims = (100,100),
+        for padsegment ∈ padsegments
+            tsconfig = TSConfig(winsize = 4800, 
+                                preprocess = x -> identity(x),
+                                augment = x -> identity(x),
                                 nchannels = nc,
-                                ndata = 1)
-        configs = [tsconfig,specconfig]
-        batchsizes = [1,2]
-        partials = [true,false]
-        for config ∈ configs
-            for batchsize ∈ batchsizes
-                for partial ∈ partials
-                    audio_loader = AudioLoader(data,
-                                            config; 
-                                            batchsize=batchsize,
-                                            partial=partial,
-                                            shuffle=false)
-                    audio_loader1 = audio_loader[2:end] # warning
-                    n = length(paths) / batchsize
-                    @test length(audio_loader) == (partial ? ceil(Int, n) : floor(Int, n))
-                    for (i, X) ∈ enumerate(audio_loader)
-                        i > 1 && !isempty(audio_loader1) && (@test X == audio_loader1[i-1]) # getindex
-                        
-                        # test targets
-                        startindex = (i-1) * audio_loader.batchsize + 1
-                        @test eltype(X[2]) == labeltype
-                        @test eltype(X[3]) == probtype
-                        if !partial | (i < length(audio_loader))
-                            stopindex = startindex + audio_loader.batchsize - 1
-                            @test X[2] == labels[startindex:stopindex]
-                            @test X[3] == probs[startindex:stopindex]
-                        else
-                            @test X[2] == labels[startindex:end]
-                            @test X[3] == probs[startindex:end]
-                        end
-
-                        # test data
-                        X1s, tls, srs = first(X)
-                        if config isa TSConfig
-                            for X1 ∈ X1s
-                                if !partial | (i < length(audio_loader))
-                                    @test size(X1) == (config.winsize, 1, nc, batchsize)
-                                    stopindex = startindex + batchsize - 1
-                                else
-                                    @test size(X1) == (config.winsize, 
-                                                    1, 
-                                                    nc, 
-                                                    length(first(audio_loader.data))-startindex+1)
-                                    stopindex = length(wavlens)
-                                end
-                            end
-                        elseif config isa SpecConfig
+                                ndata = 1,
+                                padsegment = :center)
+            specconfig = SpecConfig(winsize = 1024,
+                                    noverlap = 512,
+                                    window = Windows.hanning(1024),
+                                    scaled = (a, fs) -> melscale(a, 1024; fs=fs),
+                                    preprocess = x -> identity(x),
+                                    augment = x -> identity(x),
+                                    newdims = (128,100),
+                                    nchannels = nc,
+                                    ndata = 1,
+                                    padsegment = padsegment)
+            configs = [tsconfig,specconfig]
+            batchsizes = [1,2]
+            partials = [true,false]
+            for config ∈ configs
+                for batchsize ∈ batchsizes
+                    for partial ∈ partials
+                        audio_loader = AudioLoader(data,
+                                                config; 
+                                                batchsize=batchsize,
+                                                partial=partial,
+                                                shuffle=false)
+                        audio_loader1 = audio_loader[2:end] # warning
+                        n = length(paths) / batchsize
+                        @test length(audio_loader) == (partial ? ceil(Int, n) : floor(Int, n))
+                        for (i, X) ∈ enumerate(audio_loader)
+                            i > 1 && !isempty(audio_loader1) && (padsegment == :center) && (@test X == audio_loader1[i-1]) # getindex
+                            
+                            # test targets
+                            startindex = (i-1) * audio_loader.batchsize + 1
+                            @test eltype(X[2]) == labeltype
+                            @test eltype(X[3]) == probtype
                             if !partial | (i < length(audio_loader))
-                                for X1 ∈ X1s 
-                                    @test size(X1) == (config.newdims..., nc, batchsize)
-                                end
-                                stopindex = startindex + batchsize - 1
-                                # @test wavlens[startindex:stopindex] ≈ tls
-                                # @test samplingrates[startindex:stopindex] ≈ srs
+                                stopindex = startindex + audio_loader.batchsize - 1
+                                @test X[2] == labels[startindex:stopindex]
+                                @test X[3] == probs[startindex:stopindex]
                             else
-                                stopindex = length(wavlens)
-                                # @test wavlens[startindex:end] ≈ tls
-                                # @test samplingrates[startindex:end] ≈ srs
-                                for X1 ∈ X1s 
-                                    @test size(X1) == (config.newdims..., nc, length(first(audio_loader.data))-startindex+1)
+                                @test X[2] == labels[startindex:end]
+                                @test X[3] == probs[startindex:end]
+                            end
+
+                            # test data
+                            X1s, tls, srs = first(X)
+                            if config isa TSConfig
+                                for X1 ∈ X1s
+                                    if !partial | (i < length(audio_loader))
+                                        @test size(X1) == (config.winsize, 1, nc, batchsize)
+                                        stopindex = startindex + batchsize - 1
+                                    else
+                                        @test size(X1) == (config.winsize, 
+                                                        1, 
+                                                        nc, 
+                                                        length(first(audio_loader.data))-startindex+1)
+                                        stopindex = length(wavlens)
+                                    end
+                                end
+                            elseif config isa SpecConfig
+                                if !partial | (i < length(audio_loader))
+                                    for X1 ∈ X1s 
+                                        @test size(X1) == (config.newdims..., nc, batchsize)
+                                    end
+                                    stopindex = startindex + batchsize - 1
+                                    # @test wavlens[startindex:stopindex] ≈ tls
+                                    # @test samplingrates[startindex:stopindex] ≈ srs
+                                else
+                                    stopindex = length(wavlens)
+                                    # @test wavlens[startindex:end] ≈ tls
+                                    # @test samplingrates[startindex:end] ≈ srs
+                                    for X1 ∈ X1s 
+                                        @test size(X1) == (config.newdims..., nc, length(first(audio_loader.data))-startindex+1)
+                                    end
                                 end
                             end
+                            @test wavlens[startindex:stopindex] ≈ tls
+                            @test samplingrates[startindex:stopindex] ≈ srs
                         end
-                        @test wavlens[startindex:stopindex] ≈ tls
-                        @test samplingrates[startindex:stopindex] ≈ srs
                     end
                 end
             end
@@ -113,18 +119,21 @@ end
 
 @testset "utils" begin
     tsconfig = TSConfig(winsize = 4800, 
-                            randsegment = false, 
-                            preprocess_augment = x -> identity(x),
-                            nchannels = 1,
-                            ndata = 1)
+                        preprocess = x -> identity(x),
+                        augment = x -> identity(x),
+                        nchannels = 1,
+                        ndata = 1,
+                        padsegment = :center)
     specconfig = SpecConfig(winsize = 1024,
                             noverlap = 512,
                             window = Windows.hanning(1024),
                             scaled = (a, fs) -> melscale(a, 1024; fs=fs),
-                            preprocess_augment = x -> identity(x),
-                            newdims = (100,100),
+                            preprocess = x -> identity(x),
+                            augment = x -> identity(x),
+                            newdims = (128,100),
                             nchannels = 1,
-                            ndata = 1)
+                            ndata = 1,
+                            padsegment = :center)
     batchsize = 2
     shuffles = [true,false]
     for shuffle ∈ shuffles
@@ -138,6 +147,10 @@ end
                                 batchsize=batchsize,
                                 partial=true,
                                 shuffle=shuffle)
+        # shuffle before get the targets
+        tsloader[1]
+        specloader[1]
+
         tstargets = gettargets(tsloader)
         spectargets = gettargets(specloader)
         for (tstarget, spectarget, target) ∈ zip(tstargets, spectargets, (labels, probs))
@@ -145,6 +158,17 @@ end
             @test spectarget == target[specloader.indices]
         end
     end
+
+    a = randn(Float64, 2, 2)
+    ar = MaxPool((2,1))(reshape(a, size(a)..., 1, 1))[:,:,1,1]#imresize(a, (4, 2))
+    pad = fill(minimum(ar), 1, 1)
+    @test freqmaxpool_padsegment(a, (1, 4); type = :center) == [pad ar pad]
+    a = randn(6, 3)
+    ar = MaxPool((2,1))(reshape(a, size(a)..., 1, 1))[:,:,1,1]#imresize(a, (10, 3))
+    @test freqmaxpool_padsegment(a, (3, 2); type = :center) == ar[:,1:2]
+    a = randn(3, 3)
+    @test freqmaxpool_padsegment(a, (3, 3)) == a
+
 end
 
 @testset "mel" begin
@@ -189,18 +213,21 @@ end
 @testset "embeddings" begin
     
     tsconfig = TSConfig(winsize = 4800, 
-                        randsegment = false, 
-                        preprocess_augment = x -> identity(x),
+                        preprocess = x -> identity(x),
+                        augment = x -> identity(x),
                         nchannels = 1,
-                        ndata = 1)
+                        ndata = 1,
+                        padsegment = :center)
     specconfig = SpecConfig(winsize = 1024,
                             noverlap = 512,
                             window = Windows.hanning(1024),
                             scaled = (a, fs) -> melscale(a, 1024; fs=fs),
-                            preprocess_augment = x -> identity(x),
-                            newdims = (100,100),
+                            preprocess = x -> identity(x),
+                            augment = x -> identity(x),
+                            newdims = (128,100),
                             nchannels = 1,
-                            ndata = 1)
+                            ndata = 1,
+                            padsegment = :center)
     tsloader = AudioLoader(data,
                         tsconfig; 
                         batchsize=1,
@@ -244,9 +271,10 @@ end
 
 @testset "augmentor" begin
     
-    n = 96000
-    x1 = randn(n)
-    x2 = signal(x1, 9600)
+    n1 = 96000
+    x1 = randn(n1)
+    n2 = 9600
+    x2 = signal(x1, n2)
     for x ∈ [x1, x2]
         @test apply(Amplify(Uniform(1.999999,2.000001)), x) ≈ 2 .* x atol=1e-3
         @test apply(PolarityInverse(), x) == -x
@@ -255,6 +283,10 @@ end
         @test apply(PitchShift(0.00000001), x) ≈ x atol=0.1
         @test std(apply(BackgroundNoise(), x) - x) ≈ √2 atol=0.2
         @test std(apply(BackgroundNoise(0), x) - x) ≈ √2 atol=0.2
+        @test apply(TimeMask(length(x),length(x), 1e-10, 1e-9), x) ≈ x atol=0.01 
+        mask = ((cos.(2π * (0:length(x) .- 1) ./ (length(x) .- 1)) .+ 1) ./ 2)
+        @test apply(TimeMask(length(x),length(x), 1-1e-9, 1-1e-10), x) ≈ (x .* mask) atol=0.1 
+        @test apply(FrequencyShift(0), x) ≈ x atol=1e-6
 
         @test random_apply(PolarityInverse(), x; p=0) == x
         @test random_apply(PolarityInverse(), x; p=1) == -x

@@ -53,8 +53,8 @@ function getmelfilters(fs::T,
 
     # warning
     if !all(maximum(weights; dims=2) .> 0)
-        @warn "Empty filters detected in mel frequency basis. Some channels will produce empty \
-        responses. Try increasing your nfft or reducing nmels."
+        @warn "Empty filters detected in mel frequency basis. Some channels will produce empty " * 
+        "responses. Try increasing your nfft or reducing nmels."
     end
 
     return weights
@@ -63,7 +63,11 @@ end
 """
 Return DFT sample frequencies.
 """
-fft_frequencies(fs::Real, nfft::Int) = range(start=0, stop=fs/2, length=1+nfft÷2) |> collect
+fft_frequencies(fs::Real, nfft::Int) = if VERSION ≥ v"1.7.0"
+    range(start=0, stop=fs/2, length=1+nfft÷2)
+else
+    range(0; stop=fs/2, length=1+nfft÷2)
+end |> collect
 
 """
 Compute mel scale.
@@ -72,7 +76,11 @@ function mel_frequencies(nmels::Int, fmin::Real, fmax::Real, htk::Bool=false)
     minmel = hz2mel(fmin, htk)
     maxmel = hz2mel(fmax, htk)
 
-    mels = range(start=minmel, stop=maxmel, length=nmels) |> collect
+    mels = if VERSION ≥ v"1.7.0"
+        range(start=minmel, stop=maxmel, length=nmels)
+    else
+        range(minmel; stop=maxmel, length=nmels)
+    end |> collect
     mel2hz.(mels, htk)
 end
 
