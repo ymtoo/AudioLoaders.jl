@@ -1,6 +1,6 @@
 using AudioLoaders
 
-using DelimitedFiles, Distributions, Flux, ImageTransformations, SignalAnalysis, Test, WAV
+using DelimitedFiles, Distributions, Flux, SignalAnalysis, Test, WAV
 
 paths = readdir("data/audio/"; join=true, sort=true)
 metadata = readdlm("data/metadata.csv", ','; skipstart=1)
