@@ -85,10 +85,10 @@ function _getaudioobs(data::Tuple,
     batchsize = length(ids)
     #Xs = [Array{sampletype}[] for _ ∈ 1:config.ndata]
     Xs = Array{sampletype,4}[]#[_batchinitialize(config, batchsize) for _ ∈ 1:config.ndata]
+    timesec = zeros(sampletype, batchsize)
+    samplingrates = zeros(sampletype, batchsize)
     for _ ∈ 1:config.ndata
         Xs1 = _batchinitialize(config, batchsize)
-        timesec = zeros(sampletype, batchsize)
-        samplingrates = zeros(sampletype, batchsize)
         Threads.@threads for i ∈ 1:batchsize
             #xsize = first(wavread(data[1][ids[i]]; format="size"))
             x1, fs = wavread(data[1][ids[i]]; format="native")
@@ -111,12 +111,12 @@ function _getaudioobs(data::Tuple,
                       ids::Vector{I}) where {I<:Integer}
     batchsize = length(ids)
     Xs = Array{sampletype,4}[] #[_batchinitialize(config, batchsize) for _ ∈ 1:config.ndata]
+    timesec = zeros(sampletype, batchsize)
+    samplingrates = zeros(sampletype, batchsize)
     nstride = config.winsize - config.noverlap
     n = nstride * config.newdims[2] + nstride
     for _ ∈ 1:config.ndata
         Xs1 = _batchinitialize(config, batchsize)
-        timesec = zeros(sampletype, batchsize)
-        samplingrates = zeros(sampletype, batchsize)
         Threads.@threads for i ∈ 1:batchsize
             x1, fs = wavread(data[1][ids[i]]; format="native")
             x = convert.(sampletype, x1) 
